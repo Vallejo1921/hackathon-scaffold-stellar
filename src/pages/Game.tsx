@@ -86,7 +86,15 @@ const GameContent: React.FC = () => {
           </div>
         </div>
 
-        {/* Statistics Card - Below main game card */}
+        {/* Footer Card - Below main game card */}
+        <div style={{
+          width: "100%",
+          maxWidth: "1400px"
+        }}>
+          <GameFooterCard />
+        </div>
+
+        {/* Statistics Card - Below footer card */}
         <div style={{
           width: "100%",
           maxWidth: "1400px",
@@ -98,14 +106,6 @@ const GameContent: React.FC = () => {
             pastRounds={pastRounds}
             formatXLM={formatXLM}
           />
-        </div>
-
-        {/* Footer Card - Below statistics card */}
-        <div style={{
-          width: "100%",
-          maxWidth: "1400px"
-        }}>
-          <GameFooterCard />
         </div>
       </div>
 
