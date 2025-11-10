@@ -1,12 +1,27 @@
 import { useState, useEffect, useCallback } from "react";
 import { useWallet } from "./useWallet";
 import balloonFlyClient from "../contracts/balloonfly";
+import type { RoundStatus as ContractRoundStatus } from "../../packages/balloonfly/src/index";
 
 // Types matching the Rust contract
 export enum RoundStatus {
   Waiting = "Waiting",
   InProgress = "InProgress",
   Ended = "Ended",
+}
+
+// Helper to convert contract RoundStatus (tagged union) to enum
+const convertRoundStatus = (status: ContractRoundStatus): RoundStatus => {
+  if (typeof status === 'object' && status !== null && 'tag' in status) {
+    switch (status.tag) {
+      case 'Waiting': return RoundStatus.Waiting;
+      case 'InProgress': return RoundStatus.InProgress;
+      case 'Ended': return RoundStatus.Ended;
+      default: return RoundStatus.Waiting;
+    }
+  }
+  // Fallback for string values
+  return status as RoundStatus;
 }
 
 export enum BetStatus {
@@ -106,7 +121,24 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
     try {
       const roundData = await balloonFlyClient.get_current_round();
       if (roundData.result) {
-        const round = roundData.result as unknown as Round;
+        const contractRound = roundData.result as unknown as any;
+        
+        // Convert contract round to our Round type
+        const round: Round = {
+          id: BigInt(contractRound.id || 0),
+          status: convertRoundStatus(contractRound.status),
+          server_seed_hash: contractRound.server_seed_hash,
+          crash_multiplier: BigInt(contractRound.crash_multiplier || 0),
+          created_at: BigInt(contractRound.created_at || 0),
+          started_at: BigInt(contractRound.started_at || 0),
+          ended_at: BigInt(contractRound.ended_at || 0),
+          betting_window_end: BigInt(contractRound.betting_window_end || 0),
+          total_bet_amount: BigInt(contractRound.total_bet_amount || 0),
+          total_payout: BigInt(contractRound.total_payout || 0),
+          bet_count: contractRound.bet_count || 0,
+          client_seeds: contractRound.client_seeds || [],
+        };
+        
         setCurrentRound(round);
         
         // Update flying state based on round status
@@ -139,7 +171,25 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
     try {
       const roundData = await balloonFlyClient.get_round({ round_id: roundId });
       if (roundData.result) {
-        return roundData.result as unknown as Round;
+        const contractRound = roundData.result as unknown as any;
+        
+        // Convert contract round to our Round type
+        const round: Round = {
+          id: BigInt(contractRound.id || 0),
+          status: convertRoundStatus(contractRound.status),
+          server_seed_hash: contractRound.server_seed_hash,
+          crash_multiplier: BigInt(contractRound.crash_multiplier || 0),
+          created_at: BigInt(contractRound.created_at || 0),
+          started_at: BigInt(contractRound.started_at || 0),
+          ended_at: BigInt(contractRound.ended_at || 0),
+          betting_window_end: BigInt(contractRound.betting_window_end || 0),
+          total_bet_amount: BigInt(contractRound.total_bet_amount || 0),
+          total_payout: BigInt(contractRound.total_payout || 0),
+          bet_count: contractRound.bet_count || 0,
+          client_seeds: contractRound.client_seeds || [],
+        };
+        
+        return round;
       }
       return null;
     } catch (err) {
