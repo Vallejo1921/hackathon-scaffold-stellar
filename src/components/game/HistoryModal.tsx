@@ -31,7 +31,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ history, onClose, onRoundCl
           right: 0,
           bottom: 0,
           background: "rgba(0, 0, 0, 0.7)",
-          zIndex: 998,
+          zIndex: 1100,
           backdropFilter: "blur(4px)"
         }}
       />
@@ -49,7 +49,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ history, onClose, onRoundCl
           background: "#1e2130",
           borderRadius: "12px",
           border: "1px solid #2a2d3e",
-          zIndex: 999,
+          zIndex: 1101,
           display: "flex",
           flexDirection: "column",
           boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)"
