@@ -129,18 +129,20 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({
         </div>
       </div>
 
-      {/* Statistics Cards Grid */}
+      {/* Statistics Cards - Single Row */}
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(2, 1fr)",
-        gap: "16px"
+        display: "flex",
+        gap: "16px",
+        overflowX: "auto"
       }}>
         {/* Paid Card */}
         <div style={{
           background: "linear-gradient(135deg, #2d1b4e 0%, #1e1535 100%)",
           padding: "20px",
           borderRadius: "12px",
-          border: "1px solid #2a2d3e"
+          border: "1px solid #2a2d3e",
+          flex: "1",
+          minWidth: "200px"
         }}>
           <div style={{
             display: "flex",
@@ -182,7 +184,9 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({
           background: "linear-gradient(135deg, #2d1b4e 0%, #1e1535 100%)",
           padding: "20px",
           borderRadius: "12px",
-          border: "1px solid #2a2d3e"
+          border: "1px solid #2a2d3e",
+          flex: "1",
+          minWidth: "200px"
         }}>
           <div style={{
             display: "flex",
@@ -224,7 +228,9 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({
           background: "linear-gradient(135deg, #2d1b4e 0%, #1e1535 100%)",
           padding: "20px",
           borderRadius: "12px",
-          border: "1px solid #2a2d3e"
+          border: "1px solid #2a2d3e",
+          flex: "1",
+          minWidth: "200px"
         }}>
           <div style={{
             display: "flex",
@@ -266,7 +272,9 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({
           background: "linear-gradient(135deg, #2d1b4e 0%, #1e1535 100%)",
           padding: "20px",
           borderRadius: "12px",
-          border: "1px solid #2a2d3e"
+          border: "1px solid #2a2d3e",
+          flex: "1",
+          minWidth: "200px"
         }}>
           <div style={{
             display: "flex",
