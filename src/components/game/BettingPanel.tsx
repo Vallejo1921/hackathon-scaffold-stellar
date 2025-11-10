@@ -194,7 +194,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
         display: "flex",
         gap: "16px",
         flex: 1,
-        alignItems: "flex-start"
+        alignItems: "stretch"
       }}>
         {/* Left Section - Bet Amount and Controls */}
         <div style={{ 
@@ -301,74 +301,159 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
             </button>
           </div>
 
-          {/* Quick Amount Buttons - Only show in manual mode */}
-          {activeTab === "manual" && (
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "8px"
-            }}>
-              {quickAmounts.map((amount) => (
-                <button
-                  key={amount}
-                  type="button"
-                  onClick={() => handleQuickAmount(amount)}
-                  style={{
-                    padding: "10px",
-                    background: "#3a3f5c",
-                    border: "none",
-                    borderRadius: "6px",
-                    color: "#fff",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#8b5cf6";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#3a3f5c";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
-                  {amount}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Quick Amount Buttons - Show in BOTH modes, different sizes */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: activeTab === "auto" ? "1fr" : "1fr 1fr",
+            gap: "8px",
+            marginBottom: "12px"
+          }}>
+            {quickAmounts.map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                onClick={() => handleQuickAmount(amount)}
+                style={{
+                  padding: activeTab === "auto" ? "18px" : "10px",
+                  background: "#3a3f5c",
+                  border: "none",
+                  borderRadius: "8px",
+                  color: "#fff",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: activeTab === "auto" ? "60px" : "auto"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#8b5cf6";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#3a3f5c";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                {amount}
+              </button>
+            ))}
+          </div>
 
-          {/* Auto Settings - Only show in auto mode */}
-          {activeTab === "auto" && (
+          {/* Auto Settings - Always show at bottom */}
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            marginTop: "auto"
+          }}>
+            {/* Auto Bet Toggle */}
             <div style={{
               display: "flex",
-              flexDirection: "column",
-              gap: "12px"
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px",
+              background: "#1e2130",
+              borderRadius: "8px"
             }}>
-              {/* Auto Bet Toggle */}
+              <span style={{
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: 500
+              }}>
+                Aposta automática
+              </span>
+              <button
+                type="button"
+                onClick={() => setAutoBetEnabled(!autoBetEnabled)}
+                style={{
+                  width: "48px",
+                  height: "24px",
+                  background: autoBetEnabled ? "#10b981" : "#3a3f5c",
+                  border: "none",
+                  borderRadius: "12px",
+                  position: "relative",
+                  cursor: "pointer",
+                  transition: "all 0.3s",
+                  padding: "2px",
+                  flexShrink: 0
+                }}
+              >
+                <div style={{
+                  width: "20px",
+                  height: "20px",
+                  background: "#fff",
+                  borderRadius: "50%",
+                  transition: "transform 0.3s",
+                  transform: autoBetEnabled ? "translateX(24px)" : "translateX(0)"
+                }} />
+              </button>
+            </div>
+
+            {/* Auto Cash Out Toggle */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px",
+              background: "#1e2130",
+              borderRadius: "8px"
+            }}>
+              <span style={{
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: 500
+              }}>
+                Levantar Auto
+              </span>
               <div style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px",
-                background: "#1e2130",
-                borderRadius: "8px"
+                gap: "8px"
               }}>
+                <input
+                  type="number"
+                  min="1.0"
+                  max="1000.0"
+                  step="0.01"
+                  value={autoCashOutMultiplier.toFixed(2)}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value >= 1.0) {
+                      setAutoCashOutMultiplier(value);
+                    }
+                  }}
+                  disabled={!autoCashOutEnabled}
+                  style={{
+                    width: "60px",
+                    padding: "6px 8px",
+                    background: autoCashOutEnabled ? "#1e2130" : "#2a2d3e",
+                    border: "1px solid #3a3f5c",
+                    borderRadius: "6px",
+                    color: autoCashOutEnabled ? "#fff" : "#8b8fa3",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    textAlign: "center",
+                    outline: "none",
+                    cursor: autoCashOutEnabled ? "text" : "not-allowed"
+                  }}
+                />
                 <span style={{
-                  color: "#fff",
+                  color: "#8b8fa3",
                   fontSize: "13px",
-                  fontWeight: 500
+                  fontWeight: 600
                 }}>
-                  Aposta automática
+                  X
                 </span>
                 <button
                   type="button"
-                  onClick={() => setAutoBetEnabled(!autoBetEnabled)}
+                  onClick={() => setAutoCashOutEnabled(!autoCashOutEnabled)}
                   style={{
                     width: "48px",
                     height: "24px",
-                    background: autoBetEnabled ? "#10b981" : "#3a3f5c",
+                    background: autoCashOutEnabled ? "#10b981" : "#3a3f5c",
                     border: "none",
                     borderRadius: "12px",
                     position: "relative",
@@ -384,95 +469,12 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                     background: "#fff",
                     borderRadius: "50%",
                     transition: "transform 0.3s",
-                    transform: autoBetEnabled ? "translateX(24px)" : "translateX(0)"
+                    transform: autoCashOutEnabled ? "translateX(24px)" : "translateX(0)"
                   }} />
                 </button>
               </div>
-
-              {/* Auto Cash Out Toggle */}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px",
-                background: "#1e2130",
-                borderRadius: "8px"
-              }}>
-                <span style={{
-                  color: "#fff",
-                  fontSize: "13px",
-                  fontWeight: 500
-                }}>
-                  Levantar Auto
-                </span>
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px"
-                }}>
-                  <input
-                    type="number"
-                    min="1.0"
-                    max="1000.0"
-                    step="0.01"
-                    value={autoCashOutMultiplier.toFixed(2)}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      if (!isNaN(value) && value >= 1.0) {
-                        setAutoCashOutMultiplier(value);
-                      }
-                    }}
-                    disabled={!autoCashOutEnabled}
-                    style={{
-                      width: "60px",
-                      padding: "6px 8px",
-                      background: autoCashOutEnabled ? "#1e2130" : "#2a2d3e",
-                      border: "1px solid #3a3f5c",
-                      borderRadius: "6px",
-                      color: autoCashOutEnabled ? "#fff" : "#8b8fa3",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      textAlign: "center",
-                      outline: "none",
-                      cursor: autoCashOutEnabled ? "text" : "not-allowed"
-                    }}
-                  />
-                  <span style={{
-                    color: "#8b8fa3",
-                    fontSize: "13px",
-                    fontWeight: 600
-                  }}>
-                    X
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setAutoCashOutEnabled(!autoCashOutEnabled)}
-                    style={{
-                      width: "48px",
-                      height: "24px",
-                      background: autoCashOutEnabled ? "#10b981" : "#3a3f5c",
-                      border: "none",
-                      borderRadius: "12px",
-                      position: "relative",
-                      cursor: "pointer",
-                      transition: "all 0.3s",
-                      padding: "2px",
-                      flexShrink: 0
-                    }}
-                  >
-                    <div style={{
-                      width: "20px",
-                      height: "20px",
-                      background: "#fff",
-                      borderRadius: "50%",
-                      transition: "transform 0.3s",
-                      transform: autoCashOutEnabled ? "translateX(24px)" : "translateX(0)"
-                    }} />
-                  </button>
-                </div>
-              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Right Section - Action Button */}
