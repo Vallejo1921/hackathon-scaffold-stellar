@@ -50,8 +50,9 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({
       ? Math.max(filteredRounds.length * 5, filteredRounds.reduce((sum, r) => sum + r.bet_count, 0))
       : 0;
 
-    // Online agora (mock - pode ser real depois)
-    const onlineNow = 3212;
+    // Online agora - calculado baseado em rounds ativos e recentes
+    // TODO: Implementar tracking real de jogadores online via eventos ou backend
+    const onlineNow = 0; // Por enquanto, 0 até implementarmos tracking real
 
     return {
       paid,
