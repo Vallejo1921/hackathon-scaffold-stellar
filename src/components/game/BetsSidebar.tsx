@@ -1,13 +1,74 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useBalloonFlyContext } from "../../contexts/BalloonFlyContext";
 
 const BetsSidebar: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"bets" | "previous" | "top">("bets");
+  // Use ref to persist tab state across re-renders
+  const tabStateRef = useRef<{
+    activeTab: "bets" | "previous" | "top";
+    topSortBy: "multiplier" | "payout" | "rounds";
+    topTimeFilter: "day" | "month" | "year";
+  }>({
+    activeTab: "bets",
+    topSortBy: "multiplier",
+    topTimeFilter: "day"
+  });
+
+  // Initialize state from ref (only on mount)
+  const [activeTab, setActiveTabState] = useState<"bets" | "previous" | "top">(() => {
+    // Try to restore from localStorage first
+    const saved = localStorage.getItem("balloonfly_active_tab");
+    if (saved && ["bets", "previous", "top"].includes(saved)) {
+      tabStateRef.current.activeTab = saved as "bets" | "previous" | "top";
+      return saved as "bets" | "previous" | "top";
+    }
+    return tabStateRef.current.activeTab;
+  });
+
+  const [topSortBy, setTopSortByState] = useState<"multiplier" | "payout" | "rounds">(() => {
+    const saved = localStorage.getItem("balloonfly_top_sort");
+    if (saved && ["multiplier", "payout", "rounds"].includes(saved)) {
+      tabStateRef.current.topSortBy = saved as "multiplier" | "payout" | "rounds";
+      return saved as "multiplier" | "payout" | "rounds";
+    }
+    return tabStateRef.current.topSortBy;
+  });
+
+  const [topTimeFilter, setTopTimeFilterState] = useState<"day" | "month" | "year">(() => {
+    const saved = localStorage.getItem("balloonfly_top_time");
+    if (saved && ["day", "month", "year"].includes(saved)) {
+      tabStateRef.current.topTimeFilter = saved as "day" | "month" | "year";
+      return saved as "day" | "month" | "year";
+    }
+    return tabStateRef.current.topTimeFilter;
+  });
+
+  // Wrapper functions that update both state and ref
+  const setActiveTab = (tab: "bets" | "previous" | "top") => {
+    tabStateRef.current.activeTab = tab;
+    setActiveTabState(tab);
+    localStorage.setItem("balloonfly_active_tab", tab);
+  };
+
+  const setTopSortBy = (sort: "multiplier" | "payout" | "rounds") => {
+    tabStateRef.current.topSortBy = sort;
+    setTopSortByState(sort);
+    localStorage.setItem("balloonfly_top_sort", sort);
+  };
+
+  const setTopTimeFilter = (filter: "day" | "month" | "year") => {
+    tabStateRef.current.topTimeFilter = filter;
+    setTopTimeFilterState(filter);
+    localStorage.setItem("balloonfly_top_time", filter);
+  };
+
+  // Sync ref with state on every render to ensure consistency
+  useEffect(() => {
+    tabStateRef.current.activeTab = activeTab;
+    tabStateRef.current.topSortBy = topSortBy;
+    tabStateRef.current.topTimeFilter = topTimeFilter;
+  }, [activeTab, topSortBy, topTimeFilter]);
+
   const { pool, formatXLM, currentRound, userBet, pastRounds, multiplierToNumber } = useBalloonFlyContext();
-  
-  // For Top tab: filter states
-  const [topSortBy, setTopSortBy] = useState<"multiplier" | "payout" | "rounds">("multiplier");
-  const [topTimeFilter, setTopTimeFilter] = useState<"day" | "month" | "year">("day");
 
   // Get the most recent ended round for Previous tab
   const mostRecentRound = useMemo(() => {
