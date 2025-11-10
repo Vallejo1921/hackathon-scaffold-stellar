@@ -7,10 +7,10 @@ const Home: React.FC = () => {
   const { address } = useWallet();
   const navigate = useNavigate();
 
-  // Redireciona para /game quando conectar wallet
+  // Redireciona para /game/balloonfly quando conectar wallet
   useEffect(() => {
     if (address) {
-      navigate("/game");
+      navigate("/game/balloonfly");
     }
   }, [address, navigate]);
 
@@ -57,7 +57,7 @@ const Home: React.FC = () => {
             place your bets, and cash out before the balloon pops.
           </p>
 
-          <NavLink to="/game" style={{ textDecoration: "none" }}>
+              <NavLink to="/game/balloonfly" style={{ textDecoration: "none" }}>
             <button style={{
               background: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
               border: "none",
@@ -265,7 +265,7 @@ const Home: React.FC = () => {
           }}>
             Connect your wallet and experience the thrill of BalloonFly
           </p>
-          <NavLink to="/game" style={{ textDecoration: "none" }}>
+              <NavLink to="/game/balloonfly" style={{ textDecoration: "none" }}>
             <button style={{
               background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
               border: "none",

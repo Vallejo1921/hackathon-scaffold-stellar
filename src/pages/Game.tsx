@@ -11,21 +11,34 @@ const GameContent: React.FC = () => {
   return (
     <div style={{
       display: "flex",
-      height: "calc(100vh - 120px)", // Adjust for header/footer
-      position: "relative",
+      justifyContent: "center",
+      alignItems: "flex-start",
+      minHeight: "calc(100vh - 120px)",
+      padding: "20px",
       background: "#0a0e1a"
     }}>
-      <BetsSidebar />
-      
       <div style={{
-        flex: 1,
         display: "flex",
-        flexDirection: "column",
-        background: "#1a1d29"
+        width: "100%",
+        maxWidth: "1600px",
+        height: "calc(100vh - 160px)",
+        borderRadius: "16px",
+        overflow: "hidden",
+        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
+        background: "#0a0e1a"
       }}>
-        <HistoryBar />
-        <GameCanvas />
-        <BettingControls />
+        <BetsSidebar />
+        
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          background: "#1a1d29"
+        }}>
+          <HistoryBar />
+          <GameCanvas />
+          <BettingControls />
+        </div>
       </div>
     </div>
   );
@@ -48,7 +61,7 @@ const Game: React.FC = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        height: "calc(100vh - 120px)",
+        minHeight: "calc(100vh - 120px)",
         background: "#0a0e1a",
         color: "#8b8fa3",
         fontSize: "18px"

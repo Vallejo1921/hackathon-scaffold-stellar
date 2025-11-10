@@ -30,7 +30,7 @@ const AppLayout: React.FC = () => (
               )}
             </NavLink>
             <NavLink
-              to="/game"
+              to="/game/balloonfly"
               style={{ textDecoration: "none" }}
             >
               {({ isActive }) => (
@@ -101,7 +101,7 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/game" element={<Game />} />
+        <Route path="/game/balloonfly" element={<Game />} />
         <Route path="/debug" element={<Debugger />} />
         <Route path="/debug/:contractName" element={<Debugger />} />
       </Route>
