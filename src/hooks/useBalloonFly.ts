@@ -162,26 +162,26 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
             prev.started_at !== round.started_at
           );
           
-          // Update flying state if status changed
-          if (statusChanged) {
-            const wasFlying = prev.status === RoundStatus.InProgress;
-            const isFlyingNow = round.status === RoundStatus.InProgress;
-            if (wasFlying !== isFlyingNow) {
-              setIsFlying(isFlyingNow);
-            }
-            
-            // When round ends, add to history
-            if (round.status === RoundStatus.Ended && prev.status !== RoundStatus.Ended) {
-              setPastRounds(prevRounds => {
-                const exists = prevRounds.some(r => r.id === round.id);
-                if (exists) return prevRounds;
-                return [round, ...prevRounds].slice(0, 100);
-              });
-            }
-          }
-          
           // Only update if something actually changed
           if (idChanged || statusChanged || fieldsChanged) {
+            // Update flying state if status changed
+            if (statusChanged) {
+              const wasFlying = prev.status === RoundStatus.InProgress;
+              const isFlyingNow = round.status === RoundStatus.InProgress;
+              if (wasFlying !== isFlyingNow) {
+                setIsFlying(isFlyingNow);
+              }
+              
+              // When round ends, add to history
+              if (round.status === RoundStatus.Ended && prev.status !== RoundStatus.Ended) {
+                setPastRounds(prevRounds => {
+                  const exists = prevRounds.some(r => r.id === round.id);
+                  if (exists) return prevRounds;
+                  return [round, ...prevRounds].slice(0, 100);
+                });
+              }
+            }
+            
             return round;
           }
           
