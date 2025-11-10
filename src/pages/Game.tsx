@@ -15,6 +15,7 @@ import { Round } from "../contexts/BalloonFlyContext";
 
 const GameContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isGameExpanded, setIsGameExpanded] = useState(false);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
   const { pastRounds, fetchRoundDetails, formatXLM } = useBalloonFlyContext();
 
@@ -37,77 +38,155 @@ const GameContent: React.FC = () => {
     }
   };
 
+  const handleExpandGame = () => {
+    setIsGameExpanded(!isGameExpanded);
+  };
+
   return (
     <>
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "calc(100vh - 120px)",
-        padding: "12px",
-        background: "#0a0e1a",
-        gap: "16px"
-      }}>
-        {/* Main Game Card */}
+      {/* Expanded Game View - Overlay */}
+      {isGameExpanded && (
         <div style={{
+          position: "fixed",
+          top: "70px", // Below main header (Layout.Header)
+          left: 0,
+          right: 0,
+          bottom: "70px", // Above main footer (Layout.Footer)
+          zIndex: 1000,
+          background: "#0a0e1a",
           display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          maxWidth: "1400px",
-          height: "calc(100vh - 144px)",
-          maxHeight: "calc(100vh - 144px)",
-          borderRadius: "12px",
-          overflow: "hidden",
-          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
-          background: "#0a0e1a"
+          alignItems: "center",
+          justifyContent: "center"
         }}>
-          {/* Game Header */}
-          <GameHeader onMenuClick={() => setIsMenuOpen(true)} />
-          
           <div style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
             display: "flex",
-            flex: 1,
-            overflow: "hidden"
+            flexDirection: "column"
           }}>
-            <BetsSidebar />
-            
+            {/* Close Button */}
+            <button
+              onClick={handleExpandGame}
+              style={{
+                position: "absolute",
+                top: "20px",
+                right: "20px",
+                zIndex: 1001,
+                background: "rgba(30, 33, 48, 0.9)",
+                border: "1px solid #2a2d3e",
+                borderRadius: "8px",
+                padding: "10px 16px",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "all 0.2s",
+                backdropFilter: "blur(10px)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                e.currentTarget.style.borderColor = "#EF4444";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(30, 33, 48, 0.9)";
+                e.currentTarget.style.borderColor = "#2a2d3e";
+              }}
+            >
+              <span>⤓</span>
+              <span>Exit</span>
+            </button>
+
+            {/* Expanded Game Canvas */}
             <div style={{
               flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              background: "#1a1d29",
-              overflow: "hidden"
+              width: "100%",
+              height: "100%"
             }}>
-              <HistoryBar history={history} onRoundClick={handleRoundClick} />
               <GameCanvas />
-              <BettingControls />
             </div>
           </div>
         </div>
+      )}
 
-        {/* Footer Card - Below main game card */}
+      {/* Normal View */}
+      {!isGameExpanded && (
         <div style={{
-          width: "100%",
-          maxWidth: "1400px"
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "calc(100vh - 120px)",
+          padding: "12px",
+          background: "#0a0e1a",
+          gap: "16px"
         }}>
-          <GameFooterCard />
-        </div>
+          {/* Main Game Card */}
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+            maxWidth: "1400px",
+            height: "calc(100vh - 144px)",
+            maxHeight: "calc(100vh - 144px)",
+            borderRadius: "12px",
+            overflow: "hidden",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
+            background: "#0a0e1a"
+          }}>
+            {/* Game Header */}
+            <GameHeader onMenuClick={() => setIsMenuOpen(true)} />
+            
+            <div style={{
+              display: "flex",
+              flex: 1,
+              overflow: "hidden"
+            }}>
+              <BetsSidebar />
+              
+              <div style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                background: "#1a1d29",
+                overflow: "hidden"
+              }}>
+                <HistoryBar history={history} onRoundClick={handleRoundClick} />
+                <GameCanvas />
+                <BettingControls />
+              </div>
+            </div>
+          </div>
 
-        {/* Statistics Card - Below footer card */}
-        <div style={{
-          width: "100%",
-          maxWidth: "1400px",
-          borderRadius: "12px",
-          overflow: "hidden",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
-        }}>
-          <StatisticsPanel 
-            pastRounds={pastRounds}
-            formatXLM={formatXLM}
-          />
+          {/* Footer Card - Below main game card */}
+          <div style={{
+            width: "100%",
+            maxWidth: "1400px"
+          }}>
+            <GameFooterCard 
+              onExpandGame={handleExpandGame}
+              isGameExpanded={isGameExpanded}
+            />
+          </div>
+
+          {/* Statistics Card - Below footer card */}
+          <div style={{
+            width: "100%",
+            maxWidth: "1400px",
+            borderRadius: "12px",
+            overflow: "hidden",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
+          }}>
+            <StatisticsPanel 
+              pastRounds={pastRounds}
+              formatXLM={formatXLM}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Hamburger Menu */}
       <HamburgerMenu 

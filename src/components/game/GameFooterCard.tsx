@@ -1,37 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 interface GameFooterCardProps {
   totalLikes?: number;
+  onExpandGame?: () => void;
+  isGameExpanded?: boolean;
 }
 
 const GameFooterCard: React.FC<GameFooterCardProps> = ({
-  totalLikes = 3009
+  totalLikes = 3009,
+  onExpandGame,
+  isGameExpanded = false
 }) => {
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMarginTooltip, setShowMarginTooltip] = useState(false);
   const [showLikesTooltip, setShowLikesTooltip] = useState(false);
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error("Error attempting to enable fullscreen:", err);
-      });
-    } else {
-      document.exitFullscreen().catch(err => {
-        console.error("Error attempting to exit fullscreen:", err);
-      });
-    }
+  const handleExpandGame = () => {
+    onExpandGame?.();
   };
 
   const HOUSE_MARGIN = "3%";
@@ -57,7 +41,6 @@ const GameFooterCard: React.FC<GameFooterCardProps> = ({
           color: "#8b8fa3",
           fontSize: "13px"
         }}>
-          Powered by
         </span>
         <strong style={{
           color: "#8b5cf6",
@@ -195,15 +178,15 @@ const GameFooterCard: React.FC<GameFooterCardProps> = ({
           )}
         </div>
 
-        {/* Fullscreen Icon */}
+        {/* Expand Game Icon */}
         <button
-          onClick={handleFullscreen}
+          onClick={handleExpandGame}
           style={{
-            background: "transparent",
-            border: "1px solid #2a2d3e",
+            background: isGameExpanded ? "rgba(239, 68, 68, 0.2)" : "transparent",
+            border: `1px solid ${isGameExpanded ? "#EF4444" : "#2a2d3e"}`,
             borderRadius: "6px",
             padding: "8px",
-            color: "#8b8fa3",
+            color: isGameExpanded ? "#EF4444" : "#8b8fa3",
             cursor: "pointer",
             fontSize: "18px",
             display: "flex",
@@ -214,17 +197,21 @@ const GameFooterCard: React.FC<GameFooterCardProps> = ({
             height: "36px"
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(139, 92, 246, 0.1)";
-            e.currentTarget.style.borderColor = "#8b5cf6";
-            e.currentTarget.style.color = "#8b5cf6";
+            if (!isGameExpanded) {
+              e.currentTarget.style.background = "rgba(139, 92, 246, 0.1)";
+              e.currentTarget.style.borderColor = "#8b5cf6";
+              e.currentTarget.style.color = "#8b5cf6";
+            }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.borderColor = "#2a2d3e";
-            e.currentTarget.style.color = "#8b8fa3";
+            if (!isGameExpanded) {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.borderColor = "#2a2d3e";
+              e.currentTarget.style.color = "#8b8fa3";
+            }
           }}
         >
-          {isFullscreen ? "⤓" : "⤢"}
+          {isGameExpanded ? "⤓" : "⤢"}
         </button>
       </div>
     </div>
