@@ -146,23 +146,23 @@ const GameCanvas: React.FC = () => {
         </span>
       </div>
 
-      {/* Round Info */}
-      {currentRound && (
-        <div style={{
-          position: "absolute",
-          bottom: "20px",
-          left: "20px",
-          background: "rgba(30, 33, 48, 0.9)",
-          padding: "8px 12px",
-          borderRadius: "8px",
-          backdropFilter: "blur(10px)",
-          fontSize: "12px",
-          color: "#8b8fa3",
-          zIndex: 20
-        }}>
-          Round #{currentRound.id.toString()}
-        </div>
-      )}
+          {/* Round Info */}
+          {currentRound && (
+            <div style={{
+              position: "absolute",
+              bottom: "20px",
+              left: "20px",
+              background: "rgba(30, 33, 48, 0.9)",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              backdropFilter: "blur(10px)",
+              fontSize: "12px",
+              color: "#8b8fa3",
+              zIndex: 20
+            }}>
+              Round #{currentRound.id?.toString() || "—"}
+            </div>
+          )}
 
       <style>{`
         @keyframes bounce {
