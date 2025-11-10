@@ -23,6 +23,7 @@ export interface Round {
   created_at: bigint;
   started_at: bigint;
   ended_at: bigint;
+  betting_window_end: bigint; // Timestamp when betting window closes
   total_bet_amount: bigint;
   total_payout: bigint;
   bet_count: number;
@@ -235,9 +236,7 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
       }
 
       // Refresh round data
-      if (currentRound) {
-        await fetchCurrentRound(currentRound.id);
-      }
+      await fetchCurrentRound();
     } catch (err: any) {
       console.error("Error cashing out:", err);
       setError(err.message || "Failed to cash out");
