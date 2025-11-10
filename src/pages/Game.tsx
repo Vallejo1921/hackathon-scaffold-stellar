@@ -1,16 +1,39 @@
 import React, { useState } from "react";
 import { useWallet } from "../hooks/useWallet";
 import { useNavigate } from "react-router-dom";
-import { BalloonFlyProvider } from "../contexts/BalloonFlyContext";
+import { BalloonFlyProvider, useBalloonFlyContext } from "../contexts/BalloonFlyContext";
 import BetsSidebar from "../components/game/BetsSidebar";
 import GameCanvas from "../components/game/GameCanvas";
 import HistoryBar from "../components/game/HistoryBar";
 import BettingControls from "../components/game/BettingControls";
 import GameHeader from "../components/game/GameHeader";
 import HamburgerMenu from "../components/game/HamburgerMenu";
+import RoundDetailsModal from "../components/game/RoundDetailsModal";
+import { Round } from "../contexts/BalloonFlyContext";
 
 const GameContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedRound, setSelectedRound] = useState<Round | null>(null);
+  const { pastRounds, fetchRoundDetails } = useBalloonFlyContext();
+
+  // Converter histórico de rodadas para formato do HistoryBar
+  const history = pastRounds
+    .filter(round => round.status === "Ended" && round.crash_multiplier)
+    .map(round => ({
+      roundId: round.id,
+      multiplier: Number(round.crash_multiplier) / 100,
+      timestamp: round.ended_at || round.started_at || round.created_at
+    }))
+    .reverse(); // Mais recentes primeiro
+
+  const handleRoundClick = async (roundId: bigint) => {
+    try {
+      const roundDetails = await fetchRoundDetails(roundId);
+      setSelectedRound(roundDetails);
+    } catch (error) {
+      console.error("Error fetching round details:", error);
+    }
+  };
 
   return (
     <>
@@ -51,7 +74,7 @@ const GameContent: React.FC = () => {
               background: "#1a1d29",
               overflow: "hidden"
             }}>
-              <HistoryBar />
+              <HistoryBar history={history} onRoundClick={handleRoundClick} />
               <GameCanvas />
               <BettingControls />
             </div>
@@ -63,6 +86,14 @@ const GameContent: React.FC = () => {
       <HamburgerMenu 
         isOpen={isMenuOpen} 
         onClose={() => setIsMenuOpen(false)} 
+      />
+
+      {/* Round Details Modal */}
+      <RoundDetailsModal
+        round={selectedRound}
+        onClose={() => {
+          setSelectedRound(null);
+        }}
       />
     </>
   );

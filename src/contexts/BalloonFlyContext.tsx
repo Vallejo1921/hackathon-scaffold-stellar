@@ -8,10 +8,12 @@ interface BalloonFlyContextType {
   isFlying: boolean;
   userBet: Bet | null;
   pool: Pool | null;
+  pastRounds: Round[];
   loading: boolean;
   error: string | null;
   placeBet: (amount: number) => Promise<void>;
   cashOut: () => Promise<void>;
+  fetchRoundDetails: (roundId: bigint) => Promise<Round | null>;
   formatXLM: (stroops: bigint) => string;
   multiplierToNumber: (mult: bigint) => number;
 }

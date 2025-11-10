@@ -53,12 +53,14 @@ interface UseBalloonFlyReturn {
   isFlying: boolean;
   userBet: Bet | null;
   pool: Pool | null;
+  pastRounds: Round[];
   loading: boolean;
   error: string | null;
 
   // Actions
   placeBet: (amount: number) => Promise<void>;
   cashOut: () => Promise<void>;
+  fetchRoundDetails: (roundId: bigint) => Promise<Round | null>;
   
   // Utilities
   formatXLM: (stroops: bigint) => string;
@@ -73,6 +75,7 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
   const [isFlying, setIsFlying] = useState(false);
   const [userBet, setUserBet] = useState<Bet | null>(null);
   const [pool, setPool] = useState<Pool | null>(null);
+  const [pastRounds, setPastRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,10 +113,35 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
           setIsFlying(true);
         } else {
           setIsFlying(false);
+          
+          // When round ends, add to history
+          if (round.status === RoundStatus.Ended) {
+            setPastRounds(prev => {
+              // Check if round already exists
+              const exists = prev.some(r => r.id === round.id);
+              if (exists) return prev;
+              // Add to beginning and keep last 100 rounds
+              return [round, ...prev].slice(0, 100);
+            });
+          }
         }
       }
     } catch (err) {
       console.error("Error fetching round:", err);
+    }
+  }, []);
+
+  // Fetch round details (for modal)
+  const fetchRoundDetails = useCallback(async (roundId: bigint): Promise<Round | null> => {
+    try {
+      const roundData = await balloonFlyClient.get_round({ round_id: roundId });
+      if (roundData.result) {
+        return roundData.result as unknown as Round;
+      }
+      return null;
+    } catch (err) {
+      console.error("Error fetching round details:", err);
+      return null;
     }
   }, []);
 
@@ -258,10 +286,12 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
     isFlying,
     userBet,
     pool,
+    pastRounds,
     loading,
     error,
     placeBet,
     cashOut,
+    fetchRoundDetails,
     formatXLM,
     multiplierToNumber,
   };

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useBalloonFlyContext } from "../../contexts/BalloonFlyContext";
+import { RoundStatus } from "../../hooks/useBalloonFly";
 import AnimatedBackground from "./AnimatedBackground";
 import ProgressCurve from "./ProgressCurve";
 import AnimatedBalloon from "./AnimatedBalloon";
 
 const GameCanvas: React.FC = () => {
-  const { currentMultiplier, isFlying, currentRound } = useBalloonFlyContext();
+  const { currentMultiplier, isFlying, currentRound, multiplierToNumber } = useBalloonFlyContext();
   const [isExploding, setIsExploding] = useState(false);
   const [lastFlyingState, setLastFlyingState] = useState(false);
 
@@ -65,23 +66,26 @@ const GameCanvas: React.FC = () => {
         isExploding={isExploding}
       />
 
-      {/* Multiplier Display - Centralizado na curva */}
-      <div style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        fontSize: "140px",
-        fontWeight: 900,
-        color: getMultiplierColor(currentMultiplier),
-        textShadow: `0 0 40px ${getMultiplierColor(currentMultiplier)}, 0 0 80px ${getMultiplierColor(currentMultiplier)}`,
-        zIndex: 10,
-        transition: "all 0.1s",
-        pointerEvents: "none",
-        fontFamily: "system-ui, -apple-system, sans-serif"
-      }}>
-        {currentMultiplier.toFixed(2)}x
-      </div>
+      {/* Multiplier Display - Apenas quando crashar (Round Ended) */}
+      {currentRound?.status === RoundStatus.Ended && currentRound.crash_multiplier && (
+        <div style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          fontSize: "140px",
+          fontWeight: 900,
+          color: getMultiplierColor(multiplierToNumber(currentRound.crash_multiplier)),
+          textShadow: `0 0 40px ${getMultiplierColor(multiplierToNumber(currentRound.crash_multiplier))}, 0 0 80px ${getMultiplierColor(multiplierToNumber(currentRound.crash_multiplier))}`,
+          zIndex: 10,
+          transition: "all 0.3s ease-in",
+          pointerEvents: "none",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          animation: "fadeInScale 0.5s ease-out"
+        }}>
+          {multiplierToNumber(currentRound.crash_multiplier).toFixed(2)}x
+        </div>
+      )}
 
       {/* Status Message */}
       {statusMessage && (
@@ -164,6 +168,16 @@ const GameCanvas: React.FC = () => {
         @keyframes bounce {
           0%, 100% { transform: translateX(-50%) translateY(0); }
           50% { transform: translateX(-50%) translateY(-10px); }
+        }
+        @keyframes fadeInScale {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+          }
+          100% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
         }
       `}</style>
     </div>

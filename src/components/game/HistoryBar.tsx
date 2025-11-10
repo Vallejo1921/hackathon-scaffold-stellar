@@ -1,80 +1,139 @@
-import React from "react";
+import React, { useState } from "react";
+import HistoryModal from "./HistoryModal";
 
-const HistoryBar: React.FC = () => {
-  const mockHistory = [
-    { value: 1.41, color: "blue" },
-    { value: 4.77, color: "purple" },
-    { value: 2.16, color: "purple" },
-    { value: 1.07, color: "blue" },
-    { value: 169.62, color: "red" },
-    { value: 1.00, color: "blue" },
-    { value: 5.86, color: "purple" },
-    { value: 2.93, color: "purple" },
-    { value: 1.00, color: "blue" },
-    { value: 2.33, color: "purple" },
-    { value: 1.16, color: "blue" },
-    { value: 4.29, color: "purple" },
-    { value: 3.25, color: "purple" },
-    { value: 3.57, color: "purple" },
-    { value: 3.98, color: "purple" },
-    { value: 1.88, color: "blue" },
-    { value: 1.40, color: "blue" },
-  ];
+interface HistoryItem {
+  roundId: bigint;
+  multiplier: number;
+  timestamp: bigint;
+}
 
-  const getColorStyles = (color: string) => {
-    const colors = {
-      blue: { bg: "rgba(59, 130, 246, 0.2)", text: "#3B82F6", border: "none" },
-      purple: { bg: "rgba(168, 85, 247, 0.2)", text: "#A855F7", border: "none" },
-      red: { bg: "rgba(239, 68, 68, 0.2)", text: "#EF4444", border: "2px solid #EF4444" }
-    };
-    return colors[color as keyof typeof colors] || colors.blue;
+interface HistoryBarProps {
+  history?: HistoryItem[];
+  onRoundClick?: (roundId: bigint) => void;
+}
+
+const HistoryBar: React.FC<HistoryBarProps> = ({ history = [], onRoundClick }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Limite de multiplicadores visíveis quando colapsado
+  const VISIBLE_LIMIT = 15;
+  const visibleHistory = isExpanded ? history : history.slice(0, VISIBLE_LIMIT);
+  const hasMore = history.length > VISIBLE_LIMIT;
+
+  const getMultiplierColor = (mult: number) => {
+    if (mult < 2.0) return { bg: "rgba(59, 130, 246, 0.2)", text: "#3B82F6", border: "none" };
+    if (mult < 10.0) return { bg: "rgba(168, 85, 247, 0.2)", text: "#A855F7", border: "none" };
+    return { bg: "rgba(239, 68, 68, 0.2)", text: "#EF4444", border: "2px solid #EF4444" };
   };
 
   return (
-    <div style={{
-      padding: "16px",
-      background: "#1e2130",
-      borderBottom: "1px solid #2a2d3e"
-    }}>
+    <>
       <div style={{
-        display: "flex",
-        gap: "6px",
-        alignItems: "center",
-        overflowX: "auto",
-        padding: "4px 0"
+        padding: "12px 16px",
+        background: "#1e2130",
+        borderBottom: "1px solid #2a2d3e",
+        position: "relative"
       }}>
-        {mockHistory.map((item, idx) => {
-          const styles = getColorStyles(item.color);
-          return (
-            <div
-              key={idx}
+        <div style={{
+          display: "flex",
+          gap: "6px",
+          alignItems: "center",
+          overflowX: "auto",
+          paddingRight: hasMore && !isExpanded ? "40px" : "0",
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(139, 92, 246, 0.4) rgba(30, 33, 48, 0.2)"
+        }}>
+          {visibleHistory.length === 0 ? (
+            <div style={{
+              color: "#8b8fa3",
+              fontSize: "13px",
+              fontStyle: "italic"
+            }}>
+              No history available
+            </div>
+          ) : (
+            visibleHistory.map((item, idx) => {
+              const styles = getMultiplierColor(item.multiplier);
+              return (
+                <div
+                  key={idx}
+                  onClick={() => onRoundClick?.(item.roundId)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    background: styles.bg,
+                    color: styles.text,
+                    border: styles.border,
+                    flexShrink: 0
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.05)";
+                    e.currentTarget.style.opacity = "0.8";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.opacity = "1";
+                  }}
+                >
+                  {item.multiplier.toFixed(2)}x
+                </div>
+              );
+            })
+          )}
+          
+          {/* Botão 3 pontinhos */}
+          {hasMore && !isExpanded && (
+            <button
+              onClick={() => setIsExpanded(true)}
               style={{
-                padding: "6px 12px",
+                position: "absolute",
+                right: "16px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "rgba(139, 92, 246, 0.2)",
+                border: "1px solid #8b5cf6",
                 borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 700,
-                whiteSpace: "nowrap",
+                padding: "6px 12px",
+                color: "#8b5cf6",
                 cursor: "pointer",
+                fontSize: "18px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 transition: "all 0.2s",
-                background: styles.bg,
-                color: styles.text,
-                border: styles.border
+                minWidth: "36px",
+                height: "32px"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.05)";
+                e.currentTarget.style.background = "rgba(139, 92, 246, 0.3)";
+                e.currentTarget.style.transform = "translateY(-50%) scale(1.1)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.background = "rgba(139, 92, 246, 0.2)";
+                e.currentTarget.style.transform = "translateY(-50%) scale(1)";
               }}
             >
-              {item.value}x
-            </div>
-          );
-        })}
+              ⋯
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Modal de Histórico Expandido */}
+      {isExpanded && (
+        <HistoryModal
+          history={history}
+          onClose={() => setIsExpanded(false)}
+          onRoundClick={onRoundClick}
+        />
+      )}
+    </>
   );
 };
 
 export default HistoryBar;
-
