@@ -16,7 +16,10 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
   // Use refs to persist state across re-renders
   const stateRef = useRef({
     betAmount: 1.0,
-    activeTab: "manual" as "manual" | "auto"
+    activeTab: "manual" as "manual" | "auto",
+    autoBetEnabled: false,
+    autoCashOutEnabled: false,
+    autoCashOutMultiplier: 1.10
   });
 
   // Initialize from localStorage if available
@@ -29,7 +32,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
         return amount;
       }
     }
-    return stateRef.current.betAmount;
+    return 1.0; // Always start with 1.00
   });
 
   const [activeTab, setActiveTabState] = useState<"manual" | "auto">(() => {
@@ -39,6 +42,37 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
       return saved;
     }
     return stateRef.current.activeTab;
+  });
+
+  // Auto bet settings
+  const [autoBetEnabled, setAutoBetEnabledState] = useState(() => {
+    const saved = localStorage.getItem("balloonfly_auto_bet");
+    if (saved === "true") {
+      stateRef.current.autoBetEnabled = true;
+      return true;
+    }
+    return stateRef.current.autoBetEnabled;
+  });
+
+  const [autoCashOutEnabled, setAutoCashOutEnabledState] = useState(() => {
+    const saved = localStorage.getItem("balloonfly_auto_cashout");
+    if (saved === "true") {
+      stateRef.current.autoCashOutEnabled = true;
+      return true;
+    }
+    return stateRef.current.autoCashOutEnabled;
+  });
+
+  const [autoCashOutMultiplier, setAutoCashOutMultiplierState] = useState(() => {
+    const saved = localStorage.getItem("balloonfly_auto_cashout_mult");
+    if (saved) {
+      const mult = parseFloat(saved);
+      if (!isNaN(mult) && mult >= 1.0) {
+        stateRef.current.autoCashOutMultiplier = mult;
+        return mult;
+      }
+    }
+    return stateRef.current.autoCashOutMultiplier;
   });
 
   // Wrapper functions that update both state and ref
@@ -55,11 +89,34 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
     localStorage.setItem("balloonfly_bet_tab", tab);
   };
 
+  // Wrapper functions for auto settings
+  const setAutoBetEnabled = (enabled: boolean) => {
+    stateRef.current.autoBetEnabled = enabled;
+    setAutoBetEnabledState(enabled);
+    localStorage.setItem("balloonfly_auto_bet", enabled.toString());
+  };
+
+  const setAutoCashOutEnabled = (enabled: boolean) => {
+    stateRef.current.autoCashOutEnabled = enabled;
+    setAutoCashOutEnabledState(enabled);
+    localStorage.setItem("balloonfly_auto_cashout", enabled.toString());
+  };
+
+  const setAutoCashOutMultiplier = (mult: number) => {
+    const clamped = Math.max(1.0, Math.min(1000.0, mult));
+    stateRef.current.autoCashOutMultiplier = clamped;
+    setAutoCashOutMultiplierState(clamped);
+    localStorage.setItem("balloonfly_auto_cashout_mult", clamped.toString());
+  };
+
   // Sync ref with state
   useEffect(() => {
     stateRef.current.betAmount = betAmount;
     stateRef.current.activeTab = activeTab;
-  }, [betAmount, activeTab]);
+    stateRef.current.autoBetEnabled = autoBetEnabled;
+    stateRef.current.autoCashOutEnabled = autoCashOutEnabled;
+    stateRef.current.autoCashOutMultiplier = autoCashOutMultiplier;
+  }, [betAmount, activeTab, autoBetEnabled, autoCashOutEnabled, autoCashOutMultiplier]);
 
   const quickAmounts = [10, 20, 50, 100];
 
@@ -233,40 +290,175 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
             </button>
           </div>
 
-          {/* Quick Amount Buttons */}
-          <div style={{
-            display: "flex",
-            gap: "8px"
-          }}>
-            {quickAmounts.map((amount) => (
-              <button
-                key={amount}
-                onClick={() => handleQuickAmount(amount)}
-                style={{
-                  flex: 1,
-                  padding: "10px",
-                  background: "#3a3f5c",
-                  border: "none",
-                  borderRadius: "6px",
-                  color: "#fff",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#8b5cf6";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#3a3f5c";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                {amount}
-              </button>
-            ))}
-          </div>
+          {/* Quick Amount Buttons - Only show in manual mode */}
+          {activeTab === "manual" && (
+            <div style={{
+              display: "flex",
+              gap: "8px"
+            }}>
+              {quickAmounts.map((amount) => (
+                <button
+                  key={amount}
+                  onClick={() => handleQuickAmount(amount)}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: "#3a3f5c",
+                    border: "none",
+                    borderRadius: "6px",
+                    color: "#fff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#8b5cf6";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#3a3f5c";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  {amount}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Auto Settings - Only show in auto mode */}
+          {activeTab === "auto" && (
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px"
+            }}>
+              {/* Auto Bet Toggle */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px",
+                background: "#1e2130",
+                borderRadius: "8px"
+              }}>
+                <span style={{
+                  color: "#8b8fa3",
+                  fontSize: "13px",
+                  fontWeight: 500
+                }}>
+                  Automatic bet
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAutoBetEnabled(!autoBetEnabled)}
+                  style={{
+                    width: "48px",
+                    height: "24px",
+                    background: autoBetEnabled ? "#10b981" : "#3a3f5c",
+                    border: "none",
+                    borderRadius: "12px",
+                    position: "relative",
+                    cursor: "pointer",
+                    transition: "all 0.3s",
+                    padding: "2px"
+                  }}
+                >
+                  <div style={{
+                    width: "20px",
+                    height: "20px",
+                    background: "#fff",
+                    borderRadius: "50%",
+                    transition: "transform 0.3s",
+                    transform: autoBetEnabled ? "translateX(24px)" : "translateX(0)"
+                  }} />
+                </button>
+              </div>
+
+              {/* Auto Cash Out Toggle */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px",
+                background: "#1e2130",
+                borderRadius: "8px"
+              }}>
+                <span style={{
+                  color: "#8b8fa3",
+                  fontSize: "13px",
+                  fontWeight: 500
+                }}>
+                  Auto Cash Out
+                </span>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <input
+                    type="number"
+                    min="1.0"
+                    max="1000.0"
+                    step="0.01"
+                    value={autoCashOutMultiplier.toFixed(2)}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value) && value >= 1.0) {
+                        setAutoCashOutMultiplier(value);
+                      }
+                    }}
+                    disabled={!autoCashOutEnabled}
+                    style={{
+                      width: "60px",
+                      padding: "6px 8px",
+                      background: autoCashOutEnabled ? "#1e2130" : "#2a2d3e",
+                      border: "1px solid #3a3f5c",
+                      borderRadius: "6px",
+                      color: autoCashOutEnabled ? "#fff" : "#8b8fa3",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      textAlign: "center",
+                      outline: "none",
+                      cursor: autoCashOutEnabled ? "text" : "not-allowed"
+                    }}
+                  />
+                  <span style={{
+                    color: "#8b8fa3",
+                    fontSize: "13px",
+                    fontWeight: 600
+                  }}>
+                    X
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAutoCashOutEnabled(!autoCashOutEnabled)}
+                    style={{
+                      width: "48px",
+                      height: "24px",
+                      background: autoCashOutEnabled ? "#10b981" : "#3a3f5c",
+                      border: "none",
+                      borderRadius: "12px",
+                      position: "relative",
+                      cursor: "pointer",
+                      transition: "all 0.3s",
+                      padding: "2px"
+                    }}
+                  >
+                    <div style={{
+                      width: "20px",
+                      height: "20px",
+                      background: "#fff",
+                      borderRadius: "50%",
+                      transition: "transform 0.3s",
+                      transform: autoCashOutEnabled ? "translateX(24px)" : "translateX(0)"
+                    }} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Button */}
