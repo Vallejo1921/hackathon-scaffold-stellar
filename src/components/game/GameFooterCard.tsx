@@ -37,18 +37,29 @@ const GameFooterCard: React.FC<GameFooterCardProps> = ({
         alignItems: "center",
         gap: "8px"
       }}>
-        <span style={{
-          color: "#8b8fa3",
-          fontSize: "13px"
-        }}>
-        </span>
-        <strong style={{
-          color: "#8b5cf6",
-          fontSize: "14px",
-          fontWeight: 700
-        }}>
+        <a
+          href="https://www.deegalabs.com.br"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: "#8b5cf6",
+            fontSize: "14px",
+            fontWeight: 700,
+            textDecoration: "none",
+            transition: "all 0.2s",
+            cursor: "pointer"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#ec4899";
+            e.currentTarget.style.textDecoration = "underline";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "#8b5cf6";
+            e.currentTarget.style.textDecoration = "none";
+          }}
+        >
           DeegaLabs
-        </strong>
+        </a>
       </div>
 
       {/* Right: Icons */}
