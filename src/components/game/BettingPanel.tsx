@@ -208,16 +208,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
           flexDirection: "column",
           minWidth: 0
         }}>
-          <div style={{
-            color: "#8b8fa3",
-            fontSize: "14px",
-            fontWeight: 600,
-            marginBottom: "8px"
-          }}>
-            Bet Amount (XLM)
-          </div>
-
-          {/* Spinner */}
+          {/* Spinner - No label above */}
           <div style={{
             background: "#1e2130",
             borderRadius: "8px",
