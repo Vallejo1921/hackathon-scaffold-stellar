@@ -36,7 +36,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
           right: 0,
           bottom: 0,
           background: "rgba(0, 0, 0, 0.5)",
-          zIndex: 998,
+          zIndex: 1100,
           backdropFilter: "blur(4px)"
         }}
       />
@@ -51,7 +51,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
           height: "100vh",
           background: "#1e2130",
           borderLeft: "1px solid #2a2d3e",
-          zIndex: 999,
+          zIndex: 1101,
           display: "flex",
           flexDirection: "column",
           boxShadow: "-4px 0 20px rgba(0, 0, 0, 0.5)",
