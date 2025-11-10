@@ -6,6 +6,8 @@ import BetsSidebar from "../components/game/BetsSidebar";
 import GameCanvas from "../components/game/GameCanvas";
 import HistoryBar from "../components/game/HistoryBar";
 import BettingControls from "../components/game/BettingControls";
+import StatisticsPanel from "../components/game/StatisticsPanel";
+import GameFooterCard from "../components/game/GameFooterCard";
 import GameHeader from "../components/game/GameHeader";
 import HamburgerMenu from "../components/game/HamburgerMenu";
 import RoundDetailsModal from "../components/game/RoundDetailsModal";
@@ -14,7 +16,7 @@ import { Round } from "../contexts/BalloonFlyContext";
 const GameContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
-  const { pastRounds, fetchRoundDetails } = useBalloonFlyContext();
+  const { pastRounds, fetchRoundDetails, formatXLM } = useBalloonFlyContext();
 
   // Converter histórico de rodadas para formato do HistoryBar
   const history = pastRounds
@@ -39,12 +41,15 @@ const GameContent: React.FC = () => {
     <>
       <div style={{
         display: "flex",
+        flexDirection: "column",
         justifyContent: "center",
-        alignItems: "flex-start",
+        alignItems: "center",
         minHeight: "calc(100vh - 120px)",
         padding: "12px",
-        background: "#0a0e1a"
+        background: "#0a0e1a",
+        gap: "16px"
       }}>
+        {/* Main Game Card */}
         <div style={{
           display: "flex",
           flexDirection: "column",
@@ -79,6 +84,28 @@ const GameContent: React.FC = () => {
               <BettingControls />
             </div>
           </div>
+        </div>
+
+        {/* Statistics Card - Below main game card */}
+        <div style={{
+          width: "100%",
+          maxWidth: "1400px",
+          borderRadius: "12px",
+          overflow: "hidden",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
+        }}>
+          <StatisticsPanel 
+            pastRounds={pastRounds}
+            formatXLM={formatXLM}
+          />
+        </div>
+
+        {/* Footer Card - Below statistics card */}
+        <div style={{
+          width: "100%",
+          maxWidth: "1400px"
+        }}>
+          <GameFooterCard />
         </div>
       </div>
 
