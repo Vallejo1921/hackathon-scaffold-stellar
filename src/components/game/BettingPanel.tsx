@@ -22,19 +22,23 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
     autoCashOutMultiplier: 1.10
   });
 
-  // Initialize betAmount - always start with 1.0, ignore localStorage if it's not 1.0 or higher
+  // Initialize betAmount - always start with 1.0
+  // Only use localStorage if user explicitly set a value (and it's >= 1.0)
   const [betAmount, setBetAmountState] = useState(() => {
+    // Always default to 1.0
+    let initialAmount = 1.0;
+    
     const saved = localStorage.getItem("balloonfly_bet_amount");
     if (saved) {
       const amount = parseFloat(saved);
+      // Only use saved value if it's valid and >= 1.0
       if (!isNaN(amount) && amount >= 1.0) {
-        stateRef.current.betAmount = amount;
-        return amount;
+        initialAmount = amount;
       }
     }
-    // Always return 1.0 as default
-    stateRef.current.betAmount = 1.0;
-    return 1.0;
+    
+    stateRef.current.betAmount = initialAmount;
+    return initialAmount;
   });
 
   const [activeTab, setActiveTabState] = useState<"manual" | "auto">(() => {
