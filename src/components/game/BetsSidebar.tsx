@@ -1,38 +1,77 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useBalloonFlyContext } from "../../contexts/BalloonFlyContext";
 
 const BetsSidebar: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"bets" | "previous" | "top">("bets");
   const { pool, formatXLM, currentRound, userBet, pastRounds, multiplierToNumber } = useBalloonFlyContext();
+  
+  // For Top tab: filter states
+  const [topSortBy, setTopSortBy] = useState<"multiplier" | "payout" | "rounds">("multiplier");
+  const [topTimeFilter, setTopTimeFilter] = useState<"day" | "month" | "year">("day");
 
-  // Get rounds data for Previous/Top tabs
-  const getRoundsData = () => {
-    if (activeTab === "previous") {
-      // Previous rounds - show last 10 ended rounds
-      return pastRounds
-        .filter(r => r.status === "Ended")
-        .slice(0, 10);
-    } else if (activeTab === "top") {
-      // Top rounds - show rounds with highest payouts
-      return pastRounds
-        .filter(r => r.status === "Ended" && r.total_payout > 0n)
-        .sort((a, b) => {
-          const payoutA = Number(a.total_payout);
-          const payoutB = Number(b.total_payout);
-          return payoutB - payoutA;
-        })
-        .slice(0, 10);
-    }
-    return [];
+  // Get the most recent ended round for Previous tab
+  const mostRecentRound = useMemo(() => {
+    return pastRounds
+      .filter(r => r.status === "Ended")
+      .sort((a, b) => Number(b.ended_at || b.started_at || b.created_at) - Number(a.ended_at || a.started_at || a.created_at))[0];
+  }, [pastRounds]);
+
+  // Get rounds data for Top tab with filters
+  const getTopRoundsData = () => {
+    let filtered = pastRounds.filter(r => r.status === "Ended" && r.total_payout > 0n);
+    
+    // Time filter
+    const now = Date.now();
+    const timeFilters = {
+      day: 24 * 60 * 60 * 1000,
+      month: 30 * 24 * 60 * 60 * 1000,
+      year: 365 * 24 * 60 * 60 * 1000,
+    };
+    
+    filtered = filtered.filter(round => {
+      const roundTime = Number(round.ended_at || round.started_at || round.created_at) * 1000;
+      return (now - roundTime) <= timeFilters[topTimeFilter];
+    });
+    
+    // Sort
+    filtered.sort((a, b) => {
+      if (topSortBy === "multiplier") {
+        const multA = multiplierToNumber(a.crash_multiplier);
+        const multB = multiplierToNumber(b.crash_multiplier);
+        return multB - multA;
+      } else if (topSortBy === "payout") {
+        const payoutA = Number(a.total_payout);
+        const payoutB = Number(b.total_payout);
+        return payoutB - payoutA;
+      } else {
+        // rounds - by ID (most recent first)
+        return Number(b.id) - Number(a.id);
+      }
+    });
+    
+    return filtered.slice(0, 10);
   };
 
-  const roundsData = getRoundsData();
+  const topRoundsData = activeTab === "top" ? getTopRoundsData() : [];
 
   const getMultiplierColor = (mult: number | null) => {
     if (!mult) return "";
     if (mult < 2.0) return "#3B82F6";
     if (mult < 10.0) return "#A855F7";
     return "#EF4444";
+  };
+
+  const formatDate = (timestamp: bigint) => {
+    const date = new Date(Number(timestamp) * 1000);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(-2);
+    return `${day}.${month}.${year}`;
+  };
+
+  const maskAddress = (address: string) => {
+    if (address.length <= 8) return address;
+    return `${address.slice(0, 1)}***${address.slice(-1)}`;
   };
 
   return (
@@ -72,84 +111,197 @@ const BetsSidebar: React.FC = () => {
         ))}
       </div>
 
-      {/* Total Win Widget */}
-      <div style={{
-        background: "linear-gradient(135deg, #2d1b4e 0%, #1e1535 100%)",
-        padding: "16px",
-        margin: "12px",
-        borderRadius: "12px"
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-          <div style={{ display: "flex", gap: "4px" }}>
-            {["🎈", "🎯", "⭐"].map((emoji, i) => (
-              <div key={i} style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                border: "2px solid #1e2130",
-                background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "16px",
-                marginLeft: i > 0 ? "-10px" : "0"
-              }}>
-                {emoji}
-              </div>
-            ))}
-          </div>
-          <span style={{ fontSize: "24px", fontWeight: 700, color: "#fff" }}>
-            {pool ? formatXLM(pool.total_payouts) : "0.00"}
-          </span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#8b8fa3" }}>
-          <span><strong style={{ color: "#fff" }}>{currentRound?.bet_count || 0}</strong> Bets</span>
-          <span>Total Prize XLM</span>
-        </div>
+      {/* Total Win Widget - Only show for Bets tab */}
+      {activeTab === "bets" && (
         <div style={{
-          height: "4px",
-          background: "rgba(255, 255, 255, 0.1)",
-          borderRadius: "2px",
-          marginTop: "12px",
-          overflow: "hidden"
+          background: "linear-gradient(135deg, #2d1b4e 0%, #1e1535 100%)",
+          padding: "16px",
+          margin: "12px",
+          borderRadius: "12px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+            <div style={{ display: "flex", gap: "4px" }}>
+              {["🎈", "🎯", "⭐"].map((emoji, i) => (
+                <div key={i} style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  border: "2px solid #1e2130",
+                  background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "16px",
+                  marginLeft: i > 0 ? "-10px" : "0"
+                }}>
+                  {emoji}
+                </div>
+              ))}
+            </div>
+            <span style={{ fontSize: "24px", fontWeight: 700, color: "#fff" }}>
+              {pool ? formatXLM(pool.total_payouts) : "0.00"}
+            </span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#8b8fa3" }}>
+            <span><strong style={{ color: "#fff" }}>{currentRound?.bet_count || 0}</strong> Bets</span>
+            <span>Total Prize XLM</span>
+          </div>
+          <div style={{
+            height: "4px",
+            background: "rgba(255, 255, 255, 0.1)",
+            borderRadius: "2px",
+            marginTop: "12px",
+            overflow: "hidden"
+          }}>
+            <div style={{
+              height: "100%",
+              background: "linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%)",
+              width: "60.9%",
+              borderRadius: "2px",
+              transition: "width 0.3s"
+            }} />
+          </div>
+        </div>
+      )}
+
+      {/* Previous Tab: Round Result Header */}
+      {activeTab === "previous" && mostRecentRound && (
+        <div style={{
+          background: "#252837",
+          padding: "20px 16px",
+          borderBottom: "1px solid #2a2d3e"
         }}>
           <div style={{
-            height: "100%",
-            background: "linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%)",
-            width: "60.9%",
-            borderRadius: "2px",
-            transition: "width 0.3s"
-          }} />
+            fontSize: "12px",
+            color: "#8b8fa3",
+            marginBottom: "12px",
+            fontWeight: 600,
+            textTransform: "uppercase"
+          }}>
+            Round Result
+          </div>
+          <div style={{
+            fontSize: "48px",
+            fontWeight: 700,
+            color: "#3B82F6",
+            lineHeight: 1
+          }}>
+            {multiplierToNumber(mostRecentRound.crash_multiplier).toFixed(2)}x
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Top Tab: Filter Buttons */}
+      {activeTab === "top" && (
+        <div style={{
+          background: "#252837",
+          padding: "12px 16px",
+          borderBottom: "1px solid #2a2d3e",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px"
+        }}>
+          {/* Sort by row */}
+          <div style={{ display: "flex", gap: "6px" }}>
+            {(["multiplier", "payout", "rounds"] as const).map((sort) => (
+              <button
+                key={sort}
+                onClick={() => setTopSortBy(sort)}
+                style={{
+                  flex: 1,
+                  padding: "6px 12px",
+                  background: topSortBy === sort ? "rgba(139, 92, 246, 0.2)" : "transparent",
+                  border: `1px solid ${topSortBy === sort ? "#8b5cf6" : "#2a2d3e"}`,
+                  borderRadius: "6px",
+                  color: topSortBy === sort ? "#8b5cf6" : "#8b8fa3",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                {sort === "multiplier" ? "X" : sort === "payout" ? "Prize" : "Rounds"}
+              </button>
+            ))}
+          </div>
+          {/* Time filter row */}
+          <div style={{ display: "flex", gap: "6px" }}>
+            {(["day", "month", "year"] as const).map((time) => (
+              <button
+                key={time}
+                onClick={() => setTopTimeFilter(time)}
+                style={{
+                  flex: 1,
+                  padding: "6px 12px",
+                  background: topTimeFilter === time ? "rgba(139, 92, 246, 0.2)" : "transparent",
+                  border: `1px solid ${topTimeFilter === time ? "#8b5cf6" : "#2a2d3e"}`,
+                  borderRadius: "6px",
+                  color: topTimeFilter === time ? "#8b5cf6" : "#8b8fa3",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                {time === "day" ? "Day" : time === "month" ? "Month" : "Year"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* List Header - Dynamic based on tab */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: activeTab === "bets" ? "2fr 1fr 1fr 1fr" : "1fr 1fr 1fr 1fr",
-        padding: "12px 16px",
-        background: "#252837",
-        fontSize: "11px",
-        color: "#8b8fa3",
-        textTransform: "uppercase",
-        fontWeight: 600
-      }}>
-        {activeTab === "bets" ? (
-          <>
-            <span>Player</span>
-            <span>Bet</span>
-            <span>X</span>
-            <span>Prize</span>
-          </>
-        ) : (
-          <>
-            <span>Round</span>
-            <span>Bets</span>
-            <span>Multiplier</span>
-            <span>Payout</span>
-          </>
-        )}
-      </div>
+      {activeTab !== "previous" && (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: activeTab === "bets" ? "2fr 1fr 1fr 1fr" : "auto 1fr 1fr 1fr 1fr 1fr auto",
+          padding: "12px 16px",
+          background: "#252837",
+          fontSize: "11px",
+          color: "#8b8fa3",
+          textTransform: "uppercase",
+          fontWeight: 600,
+          gap: "8px"
+        }}>
+          {activeTab === "bets" ? (
+            <>
+              <span>Player</span>
+              <span>Bet</span>
+              <span>X</span>
+              <span>Prize</span>
+            </>
+          ) : (
+            <>
+              <span></span>
+              <span>Player</span>
+              <span>Date</span>
+              <span>Bet</span>
+              <span>Prize</span>
+              <span>Result</span>
+              <span></span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Previous Tab: Player List Header */}
+      {activeTab === "previous" && mostRecentRound && (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr 1fr 1fr",
+          padding: "12px 16px",
+          background: "#252837",
+          fontSize: "11px",
+          color: "#8b8fa3",
+          textTransform: "uppercase",
+          fontWeight: 600
+        }}>
+          <span>Player</span>
+          <span>Bet</span>
+          <span>X</span>
+          <span>Prize</span>
+        </div>
+      )}
 
       {/* List Content */}
       <div style={{
@@ -242,9 +394,9 @@ const BetsSidebar: React.FC = () => {
               );
             })()
           )
-        ) : (
-          // Previous/Top tabs - show rounds
-          roundsData.length === 0 ? (
+        ) : activeTab === "previous" ? (
+          // Previous tab - show round result and players
+          !mostRecentRound ? (
             <div style={{
               padding: "40px 20px",
               textAlign: "center",
@@ -252,56 +404,117 @@ const BetsSidebar: React.FC = () => {
             }}>
               <div style={{ fontSize: "48px", marginBottom: "12px" }}>📊</div>
               <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px", color: "#fff" }}>
-                No {activeTab === "previous" ? "previous" : "top"} rounds yet
+                No previous rounds yet
               </div>
               <div style={{ fontSize: "12px" }}>
-                {activeTab === "previous" 
-                  ? "Rounds will appear here after they end"
-                  : "Top rounds will appear here based on payouts"}
+                Rounds will appear here after they end
               </div>
             </div>
           ) : (
-            roundsData.map((round) => {
-              const crashMult = round.crash_multiplier > 0n 
-                ? multiplierToNumber(round.crash_multiplier) 
-                : null;
-              const payout = round.total_payout > 0n 
-                ? Number(round.total_payout) / 10_000_000 
-                : 0;
+            <div style={{
+              padding: "12px 16px",
+              textAlign: "center",
+              color: "#8b8fa3",
+              fontSize: "12px"
+            }}>
+              {/* Note: Individual player bets are not available from contract */}
+              <div style={{ marginBottom: "8px" }}>
+                <strong style={{ color: "#fff" }}>{mostRecentRound.bet_count}</strong> players participated
+              </div>
+              <div>
+                Total payout: <strong style={{ color: "#10b981" }}>{formatXLM(mostRecentRound.total_payout)} XLM</strong>
+              </div>
+            </div>
+          )
+        ) : (
+          // Top tab - show top rounds with detailed info
+          topRoundsData.length === 0 ? (
+            <div style={{
+              padding: "40px 20px",
+              textAlign: "center",
+              color: "#8b8fa3"
+            }}>
+              <div style={{ fontSize: "48px", marginBottom: "12px" }}>🏆</div>
+              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px", color: "#fff" }}>
+                No top rounds yet
+              </div>
+              <div style={{ fontSize: "12px" }}>
+                Top rounds will appear here based on {topSortBy === "multiplier" ? "multipliers" : topSortBy === "payout" ? "payouts" : "rounds"}
+              </div>
+            </div>
+          ) : (
+            topRoundsData.map((round) => {
+              const crashMult = multiplierToNumber(round.crash_multiplier);
+              const payout = Number(round.total_payout) / 10_000_000;
+              const date = round.ended_at ? formatDate(round.ended_at) : round.started_at ? formatDate(round.started_at) : formatDate(round.created_at);
+              
+              // Generate avatar from round ID
+              const avatars = ["🎈", "🎯", "⭐", "💎", "🚀", "🌟", "🎲", "🏆", "🐕", "🌿", "🦁", "🌙"];
+              const avatarIndex = Number(round.id) % avatars.length;
+              const avatar = avatars[avatarIndex];
+              
+              // Mock player address from round ID (since we don't have individual bets)
+              const mockAddress = `R${round.id.toString().slice(-6)}`;
+              const maskedAddress = maskAddress(mockAddress);
 
               return (
                 <div
                   key={round.id.toString()}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                    gridTemplateColumns: "auto 1fr 1fr 1fr 1fr 1fr auto",
                     padding: "12px 16px",
                     borderBottom: "1px solid #252837",
                     alignItems: "center",
                     background: payout > 0 ? "rgba(124, 58, 237, 0.05)" : "transparent",
-                    transition: "background 0.2s"
+                    transition: "background 0.2s",
+                    gap: "8px"
                   }}
                 >
-                  <span style={{ fontSize: "13px", color: "#fff", fontWeight: 600 }}>
-                    #{round.id.toString()}
-                  </span>
-                  <span style={{ fontSize: "13px", color: "#8b8fa3" }}>
-                    {round.bet_count}
-                  </span>
-                  <span style={{ 
-                    fontSize: "13px", 
-                    color: crashMult ? getMultiplierColor(crashMult) : "#8b8fa3", 
-                    fontWeight: crashMult ? 600 : 400 
+                  {/* Avatar */}
+                  <div style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "16px"
                   }}>
-                    {crashMult ? `${crashMult.toFixed(2)}x` : "—"}
+                    {avatar}
+                  </div>
+                  
+                  {/* Player (masked) */}
+                  <span style={{ fontSize: "12px", color: "#fff", fontFamily: "'Courier New', monospace" }}>
+                    {maskedAddress}
                   </span>
-                  <span style={{ 
-                    fontSize: "13px", 
-                    color: payout > 0 ? "#10b981" : "#8b8fa3", 
-                    fontWeight: payout > 0 ? 600 : 400 
-                  }}>
-                    {payout > 0 ? formatXLM(round.total_payout) : "—"}
+                  
+                  {/* Date */}
+                  <span style={{ fontSize: "12px", color: "#8b8fa3" }}>
+                    {date}
                   </span>
+                  
+                  {/* Bet (average bet amount) */}
+                  <span style={{ fontSize: "12px", color: "#8b8fa3" }}>
+                    {round.bet_count > 0 ? formatXLM(round.total_bet_amount / BigInt(round.bet_count)) : "0.00"}
+                  </span>
+                  
+                  {/* Prize */}
+                  <span style={{ fontSize: "12px", color: "#10b981", fontWeight: 600 }}>
+                    {formatXLM(round.total_payout)}
+                  </span>
+                  
+                  {/* Result (crash multiplier) - Pink */}
+                  <span style={{ fontSize: "12px", color: "#ec4899", fontWeight: 600 }}>
+                    {crashMult.toFixed(2)}x
+                  </span>
+                  
+                  {/* Icons */}
+                  <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                    <span style={{ fontSize: "14px", cursor: "pointer" }}>💬</span>
+                    <span style={{ fontSize: "14px", cursor: "pointer" }}>🛡️</span>
+                  </div>
                 </div>
               );
             })
@@ -340,4 +553,3 @@ const BetsSidebar: React.FC = () => {
 };
 
 export default BetsSidebar;
-
