@@ -11,7 +11,7 @@ export enum RoundStatus {
 }
 
 // Helper to convert contract RoundStatus (tagged union) to enum
-const convertRoundStatus = (status: ContractRoundStatus): RoundStatus => {
+export const convertRoundStatus = (status: ContractRoundStatus): RoundStatus => {
   if (typeof status === 'object' && status !== null && 'tag' in status) {
     switch (status.tag) {
       case 'Waiting': return RoundStatus.Waiting;
@@ -140,25 +140,54 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
           client_seeds: contractRound.client_seeds || [],
         };
         
-        setCurrentRound(round);
-        
-        // Update flying state based on round status
-        if (round.status === RoundStatus.InProgress) {
-          setIsFlying(true);
-        } else {
-          setIsFlying(false);
-          
-          // When round ends, add to history
-          if (round.status === RoundStatus.Ended) {
-            setPastRounds(prev => {
-              // Check if round already exists
-              const exists = prev.some(r => r.id === round.id);
-              if (exists) return prev;
-              // Add to beginning and keep last 100 rounds
-              return [round, ...prev].slice(0, 100);
-            });
+        // Only update state if round actually changed to prevent unnecessary re-renders
+        setCurrentRound(prev => {
+          if (!prev) {
+            // First time, set flying state
+            const isFlyingNow = round.status === RoundStatus.InProgress;
+            setIsFlying(isFlyingNow);
+            return round;
           }
-        }
+          
+          // Check if round ID or status changed
+          const idChanged = prev.id !== round.id;
+          const statusChanged = prev.status !== round.status;
+          
+          // Check if other important fields changed
+          const fieldsChanged = (
+            prev.crash_multiplier !== round.crash_multiplier ||
+            prev.total_bet_amount !== round.total_bet_amount ||
+            prev.total_payout !== round.total_payout ||
+            prev.bet_count !== round.bet_count ||
+            prev.started_at !== round.started_at
+          );
+          
+          // Update flying state if status changed
+          if (statusChanged) {
+            const wasFlying = prev.status === RoundStatus.InProgress;
+            const isFlyingNow = round.status === RoundStatus.InProgress;
+            if (wasFlying !== isFlyingNow) {
+              setIsFlying(isFlyingNow);
+            }
+            
+            // When round ends, add to history
+            if (round.status === RoundStatus.Ended && prev.status !== RoundStatus.Ended) {
+              setPastRounds(prevRounds => {
+                const exists = prevRounds.some(r => r.id === round.id);
+                if (exists) return prevRounds;
+                return [round, ...prevRounds].slice(0, 100);
+              });
+            }
+          }
+          
+          // Only update if something actually changed
+          if (idChanged || statusChanged || fieldsChanged) {
+            return round;
+          }
+          
+          // No changes, return previous to prevent re-render
+          return prev;
+        });
       }
     } catch (err) {
       console.error("Error fetching current round:", err);
@@ -383,12 +412,15 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
     return () => clearInterval(interval);
   }, [isFlying, currentRound, multiplierToNumber]);
 
-  // Fetch current round on mount and poll for updates
+  // Fetch current round on mount and poll for updates (optimized to prevent unnecessary re-renders)
   useEffect(() => {
     fetchCurrentRound();
     
     // Poll for round updates every 2 seconds
-    const interval = setInterval(fetchCurrentRound, 2000);
+    // Only updates if round actually changed (by ID or status)
+    const interval = setInterval(() => {
+      fetchCurrentRound();
+    }, 2000);
     return () => clearInterval(interval);
   }, [fetchCurrentRound]);
 

@@ -1,43 +1,47 @@
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import BettingPanel from "./BettingPanel";
 import { useBalloonFlyContext } from "../../contexts/BalloonFlyContext";
 
 const BettingControls: React.FC = () => {
   const { placeBet, cashOut, userBet, loading, error, isFlying } = useBalloonFlyContext();
-
-  const handleBet1 = async (amount: number) => {
+  
+  // Memoize handlers to prevent re-renders of BettingPanel
+  const handleBet1 = useCallback(async (amount: number) => {
     try {
       await placeBet(amount);
     } catch (err) {
       console.error("Error placing bet:", err);
     }
-  };
+  }, [placeBet]);
 
-  const handleBet2 = async (amount: number) => {
+  const handleBet2 = useCallback(async (amount: number) => {
     try {
       await placeBet(amount);
     } catch (err) {
       console.error("Error placing bet:", err);
     }
-  };
+  }, [placeBet]);
 
-  const handleCashOut1 = async () => {
+  const handleCashOut1 = useCallback(async () => {
     try {
       await cashOut();
     } catch (err) {
       console.error("Error cashing out:", err);
     }
-  };
+  }, [cashOut]);
 
-  const handleCashOut2 = async () => {
+  const handleCashOut2 = useCallback(async () => {
     try {
       await cashOut();
     } catch (err) {
       console.error("Error cashing out:", err);
     }
-  };
+  }, [cashOut]);
 
-  const hasActiveBet = userBet && userBet.status === "Active" && isFlying;
+  const hasActiveBet = useMemo(() => {
+    return userBet && userBet.status === "Active" && isFlying;
+  }, [userBet, isFlying]);
+
 
   return (
     <div style={{
@@ -69,13 +73,13 @@ const BettingControls: React.FC = () => {
         margin: "0 auto"
       }}>
         <BettingPanel 
-          isActive={hasActiveBet || false}
+          isActive={!!hasActiveBet}
           onBet={handleBet1}
           onCashOut={handleCashOut1}
           loading={loading}
         />
         <BettingPanel 
-          isActive={hasActiveBet || false}
+          isActive={!!hasActiveBet}
           onBet={handleBet2}
           onCashOut={handleCashOut2}
           loading={loading}

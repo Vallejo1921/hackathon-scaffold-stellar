@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 interface BettingPanelProps {
   isActive?: boolean;
@@ -7,14 +7,59 @@ interface BettingPanelProps {
   loading?: boolean;
 }
 
-const BettingPanel: React.FC<BettingPanelProps> = ({ 
+const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
   isActive = false,
   onBet,
   onCashOut,
   loading = false
 }) => {
-  const [betAmount, setBetAmount] = useState(1.0);
-  const [activeTab, setActiveTab] = useState<"manual" | "auto">("manual");
+  // Use refs to persist state across re-renders
+  const stateRef = useRef({
+    betAmount: 1.0,
+    activeTab: "manual" as "manual" | "auto"
+  });
+
+  // Initialize from localStorage if available
+  const [betAmount, setBetAmountState] = useState(() => {
+    const saved = localStorage.getItem("balloonfly_bet_amount");
+    if (saved) {
+      const amount = parseFloat(saved);
+      if (!isNaN(amount) && amount > 0) {
+        stateRef.current.betAmount = amount;
+        return amount;
+      }
+    }
+    return stateRef.current.betAmount;
+  });
+
+  const [activeTab, setActiveTabState] = useState<"manual" | "auto">(() => {
+    const saved = localStorage.getItem("balloonfly_bet_tab");
+    if (saved && (saved === "manual" || saved === "auto")) {
+      stateRef.current.activeTab = saved;
+      return saved;
+    }
+    return stateRef.current.activeTab;
+  });
+
+  // Wrapper functions that update both state and ref
+  const setBetAmount = (amount: number | ((prev: number) => number)) => {
+    const newAmount = typeof amount === 'function' ? amount(stateRef.current.betAmount) : amount;
+    stateRef.current.betAmount = newAmount;
+    setBetAmountState(newAmount);
+    localStorage.setItem("balloonfly_bet_amount", newAmount.toString());
+  };
+
+  const setActiveTab = (tab: "manual" | "auto") => {
+    stateRef.current.activeTab = tab;
+    setActiveTabState(tab);
+    localStorage.setItem("balloonfly_bet_tab", tab);
+  };
+
+  // Sync ref with state
+  useEffect(() => {
+    stateRef.current.betAmount = betAmount;
+    stateRef.current.activeTab = activeTab;
+  }, [betAmount, activeTab]);
 
   const quickAmounts = [10, 20, 50, 100];
 
@@ -287,7 +332,17 @@ const BettingPanel: React.FC<BettingPanelProps> = ({
       `}</style>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent re-renders unless props actually changed
+  return (
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.loading === nextProps.loading &&
+    prevProps.onBet === nextProps.onBet &&
+    prevProps.onCashOut === nextProps.onCashOut
+  );
+});
+
+BettingPanel.displayName = "BettingPanel";
 
 export default BettingPanel;
 
