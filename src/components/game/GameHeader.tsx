@@ -45,7 +45,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({ onMenuClick }) => {
         }}>
           <span style={{ color: "#8b8fa3" }}>Round:</span>
           <span style={{ color: "#fff", fontWeight: 600 }}>
-            #{currentRound?.id.toString() || "—"}
+            #{currentRound?.id?.toString() || "—"}
           </span>
           
           <div style={{
