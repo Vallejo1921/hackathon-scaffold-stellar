@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 
 interface BettingPanelProps {
   isActive?: boolean;
@@ -13,7 +13,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
   onCashOut,
   loading = false
 }) => {
-  // Use refs to persist state across re-renders
+  // Use refs to persist state across re-renders - NEVER reset to anything other than 1.0
   const stateRef = useRef({
     betAmount: 1.0,
     activeTab: "manual" as "manual" | "auto",
@@ -22,17 +22,19 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
     autoCashOutMultiplier: 1.10
   });
 
-  // Initialize from localStorage if available
+  // Initialize betAmount - always start with 1.0, ignore localStorage if it's not 1.0 or higher
   const [betAmount, setBetAmountState] = useState(() => {
     const saved = localStorage.getItem("balloonfly_bet_amount");
     if (saved) {
       const amount = parseFloat(saved);
-      if (!isNaN(amount) && amount > 0) {
+      if (!isNaN(amount) && amount >= 1.0) {
         stateRef.current.betAmount = amount;
         return amount;
       }
     }
-    return 1.0; // Always start with 1.00
+    // Always return 1.0 as default
+    stateRef.current.betAmount = 1.0;
+    return 1.0;
   });
 
   const [activeTab, setActiveTabState] = useState<"manual" | "auto">(() => {
@@ -41,26 +43,18 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
       stateRef.current.activeTab = saved;
       return saved;
     }
-    return stateRef.current.activeTab;
+    return "manual"; // Default to manual
   });
 
   // Auto bet settings
   const [autoBetEnabled, setAutoBetEnabledState] = useState(() => {
     const saved = localStorage.getItem("balloonfly_auto_bet");
-    if (saved === "true") {
-      stateRef.current.autoBetEnabled = true;
-      return true;
-    }
-    return stateRef.current.autoBetEnabled;
+    return saved === "true";
   });
 
   const [autoCashOutEnabled, setAutoCashOutEnabledState] = useState(() => {
     const saved = localStorage.getItem("balloonfly_auto_cashout");
-    if (saved === "true") {
-      stateRef.current.autoCashOutEnabled = true;
-      return true;
-    }
-    return stateRef.current.autoCashOutEnabled;
+    return saved === "true";
   });
 
   const [autoCashOutMultiplier, setAutoCashOutMultiplierState] = useState(() => {
@@ -68,48 +62,48 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
     if (saved) {
       const mult = parseFloat(saved);
       if (!isNaN(mult) && mult >= 1.0) {
-        stateRef.current.autoCashOutMultiplier = mult;
         return mult;
       }
     }
-    return stateRef.current.autoCashOutMultiplier;
+    return 1.10;
   });
 
   // Wrapper functions that update both state and ref
-  const setBetAmount = (amount: number | ((prev: number) => number)) => {
+  const setBetAmount = useCallback((amount: number | ((prev: number) => number)) => {
     const newAmount = typeof amount === 'function' ? amount(stateRef.current.betAmount) : amount;
-    stateRef.current.betAmount = newAmount;
-    setBetAmountState(newAmount);
-    localStorage.setItem("balloonfly_bet_amount", newAmount.toString());
-  };
+    const clamped = Math.max(1.0, newAmount);
+    stateRef.current.betAmount = clamped;
+    setBetAmountState(clamped);
+    localStorage.setItem("balloonfly_bet_amount", clamped.toString());
+  }, []);
 
-  const setActiveTab = (tab: "manual" | "auto") => {
+  const setActiveTab = useCallback((tab: "manual" | "auto") => {
     stateRef.current.activeTab = tab;
     setActiveTabState(tab);
     localStorage.setItem("balloonfly_bet_tab", tab);
-  };
+  }, []);
 
   // Wrapper functions for auto settings
-  const setAutoBetEnabled = (enabled: boolean) => {
+  const setAutoBetEnabled = useCallback((enabled: boolean) => {
     stateRef.current.autoBetEnabled = enabled;
     setAutoBetEnabledState(enabled);
     localStorage.setItem("balloonfly_auto_bet", enabled.toString());
-  };
+  }, []);
 
-  const setAutoCashOutEnabled = (enabled: boolean) => {
+  const setAutoCashOutEnabled = useCallback((enabled: boolean) => {
     stateRef.current.autoCashOutEnabled = enabled;
     setAutoCashOutEnabledState(enabled);
     localStorage.setItem("balloonfly_auto_cashout", enabled.toString());
-  };
+  }, []);
 
-  const setAutoCashOutMultiplier = (mult: number) => {
+  const setAutoCashOutMultiplier = useCallback((mult: number) => {
     const clamped = Math.max(1.0, Math.min(1000.0, mult));
     stateRef.current.autoCashOutMultiplier = clamped;
     setAutoCashOutMultiplierState(clamped);
     localStorage.setItem("balloonfly_auto_cashout_mult", clamped.toString());
-  };
+  }, []);
 
-  // Sync ref with state
+  // Sync ref with state - but don't cause re-renders
   useEffect(() => {
     stateRef.current.betAmount = betAmount;
     stateRef.current.activeTab = activeTab;
@@ -120,32 +114,34 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
 
   const quickAmounts = [10, 20, 50, 100];
 
-  const handleIncrement = () => {
+  const handleIncrement = useCallback(() => {
     setBetAmount(prev => prev + 1.0);
-  };
+  }, [setBetAmount]);
 
-  const handleDecrement = () => {
+  const handleDecrement = useCallback(() => {
     setBetAmount(prev => Math.max(1.0, prev - 1.0));
-  };
+  }, [setBetAmount]);
 
-  const handleQuickAmount = (amount: number) => {
+  const handleQuickAmount = useCallback((amount: number) => {
     setBetAmount(amount);
-  };
+  }, [setBetAmount]);
 
-  const handleAction = () => {
+  const handleAction = useCallback(() => {
     if (isActive && onCashOut) {
       onCashOut();
     } else if (onBet) {
       onBet(betAmount);
     }
-  };
+  }, [isActive, onBet, onCashOut, betAmount]);
 
   return (
     <div style={{
       flex: 1,
       background: "#252837",
       borderRadius: "12px",
-      padding: "20px"
+      padding: "20px",
+      display: "flex",
+      flexDirection: "column"
     }}>
       {/* Tabs */}
       <div style={{
@@ -157,6 +153,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
         marginBottom: "16px"
       }}>
         <button
+          type="button"
           onClick={() => setActiveTab("manual")}
           style={{
             flex: 1,
@@ -171,9 +168,10 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
             transition: "all 0.2s"
           }}
         >
-          Bet
+          Aposta
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab("auto")}
           style={{
             flex: 1,
@@ -188,17 +186,21 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
             transition: "all 0.2s"
           }}
         >
-          Auto
+          Automático
         </button>
       </div>
 
       <div style={{
         display: "flex",
         gap: "16px",
-        alignItems: "flex-end"
+        flex: 1
       }}>
-        {/* Bet Amount Section */}
-        <div style={{ flex: 1 }}>
+        {/* Left Section - Bet Amount and Controls */}
+        <div style={{ 
+          flex: 1,
+          display: "flex",
+          flexDirection: "column"
+        }}>
           <div style={{
             color: "#8b8fa3",
             fontSize: "14px",
@@ -220,6 +222,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
             border: "2px solid #3a3f5c"
           }}>
             <button
+              type="button"
               onClick={handleDecrement}
               style={{
                 width: "36px",
@@ -230,6 +233,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 color: "#fff",
                 cursor: "pointer",
                 fontSize: "20px",
+                fontWeight: 600,
                 transition: "all 0.2s",
                 display: "flex",
                 alignItems: "center",
@@ -255,13 +259,14 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 border: "none",
                 color: "#fff",
                 fontSize: "20px",
-                fontWeight: 600,
+                fontWeight: 700,
                 width: "120px",
                 textAlign: "center",
                 outline: "none"
               }}
             />
             <button
+              type="button"
               onClick={handleIncrement}
               style={{
                 width: "36px",
@@ -272,6 +277,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 color: "#fff",
                 cursor: "pointer",
                 fontSize: "20px",
+                fontWeight: 600,
                 transition: "all 0.2s",
                 display: "flex",
                 alignItems: "center",
@@ -293,15 +299,16 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
           {/* Quick Amount Buttons - Only show in manual mode */}
           {activeTab === "manual" && (
             <div style={{
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
               gap: "8px"
             }}>
               {quickAmounts.map((amount) => (
                 <button
                   key={amount}
+                  type="button"
                   onClick={() => handleQuickAmount(amount)}
                   style={{
-                    flex: 1,
                     padding: "10px",
                     background: "#3a3f5c",
                     border: "none",
@@ -344,11 +351,11 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 borderRadius: "8px"
               }}>
                 <span style={{
-                  color: "#8b8fa3",
+                  color: "#fff",
                   fontSize: "13px",
                   fontWeight: 500
                 }}>
-                  Automatic bet
+                  Aposta automática
                 </span>
                 <button
                   type="button"
@@ -386,11 +393,11 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 borderRadius: "8px"
               }}>
                 <span style={{
-                  color: "#8b8fa3",
+                  color: "#fff",
                   fontSize: "13px",
                   fontWeight: 500
                 }}>
-                  Auto Cash Out
+                  Levantar Auto
                 </span>
                 <div style={{
                   display: "flex",
@@ -461,9 +468,14 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
           )}
         </div>
 
-        {/* Action Button */}
-        <div style={{ flex: 1 }}>
+        {/* Right Section - Action Button */}
+        <div style={{ 
+          flex: 1,
+          display: "flex",
+          alignItems: "stretch"
+        }}>
           <button
+            type="button"
             onClick={handleAction}
             disabled={loading}
             style={{
@@ -482,12 +494,13 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
+              justifyContent: "center",
               gap: "4px",
               animation: isActive ? "pulse 1s ease-in-out infinite" : "none",
               opacity: loading ? 0.6 : 1
             }}
             onMouseEnter={(e) => {
-              if (!isActive) {
+              if (!isActive && !loading) {
                 e.currentTarget.style.transform = "translateY(-2px)";
                 e.currentTarget.style.boxShadow = "0 8px 20px rgba(16, 185, 129, 0.3)";
               }
@@ -504,7 +517,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
               textTransform: "uppercase",
               letterSpacing: "0.5px"
             }}>
-              {loading ? "Processing..." : isActive ? "💰 Cash Out Now!" : "Bet"}
+              {loading ? "Processing..." : isActive ? "💰 Cash Out Now!" : "Aposta"}
             </span>
             <span style={{
               fontSize: "18px",
@@ -537,4 +550,3 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
 BettingPanel.displayName = "BettingPanel";
 
 export default BettingPanel;
-
