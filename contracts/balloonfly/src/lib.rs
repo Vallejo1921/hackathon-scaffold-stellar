@@ -10,8 +10,8 @@ pub use error::Error;
 pub use types::{Bet, BetStatus, Pool, Round, RoundStatus};
 
 use storage::{
-    get_admin, get_bet, get_pool, get_round, has_admin, set_admin, set_bet, set_pool, set_round,
-    HOUSE_EDGE_BPS,
+    get_admin, get_bet, get_current_round_id, get_pool, get_round, has_admin, set_admin, set_bet,
+    set_current_round_id, set_pool, set_round, HOUSE_EDGE_BPS,
 };
 
 #[contract]
@@ -45,27 +45,47 @@ impl BalloonFlyContract {
     /// Create a new round (admin only)
     /// 
     /// Security: Only admin can create rounds to prevent spam
+    /// Ensures only one round is active at a time
     pub fn create_round(
         env: Env,
         round_id: u64,
         server_seed_hash: BytesN<32>,
+        betting_window_seconds: u64,
     ) -> Result<Round, Error> {
         let admin = get_admin(&env);
         admin.require_auth();
+
+        // Check if there's already an active round
+        if let Some(current_round_id) = get_current_round_id(&env) {
+            if let Ok(current_round) = get_round(&env, current_round_id) {
+                match current_round.status {
+                    RoundStatus::Waiting | RoundStatus::InProgress => {
+                        return Err(Error::RoundAlreadyActive);
+                    }
+                    RoundStatus::Ended => {
+                        // OK, can create new round
+                    }
+                }
+            }
+        }
 
         // Prevent round ID reuse (security)
         if env.storage().persistent().has(&round_id) {
             return Err(Error::RoundAlreadyExists);
         }
 
+        let now = env.ledger().timestamp();
+        let betting_window_end = now + betting_window_seconds;
+
         let round = Round {
             id: round_id,
             status: RoundStatus::Waiting,
             server_seed_hash,
             crash_multiplier: 0, // Will be set when round starts
-            created_at: env.ledger().timestamp(),
+            created_at: now,
             started_at: 0,
             ended_at: 0,
+            betting_window_end,
             total_bet_amount: 0,
             total_payout: 0,
             bet_count: 0,
@@ -73,6 +93,7 @@ impl BalloonFlyContract {
         };
 
         set_round(&env, round_id, &round);
+        set_current_round_id(&env, round_id); // Mark as current round
         Ok(round)
     }
 
@@ -265,7 +286,13 @@ impl BalloonFlyContract {
     /// - Verifies round is in progress
     /// - Marks all uncashed bets as lost
     /// - Records final stats
-    pub fn finalize_round(env: Env, round_id: u64) -> Result<(), Error> {
+    /// - Automatically creates next round
+    pub fn finalize_round(
+        env: Env,
+        round_id: u64,
+        next_server_seed_hash: BytesN<32>,
+        betting_window_seconds: u64,
+    ) -> Result<u64, Error> {
         let admin = get_admin(&env);
         admin.require_auth();
 
@@ -278,9 +305,32 @@ impl BalloonFlyContract {
 
         round.status = RoundStatus::Ended;
         round.ended_at = env.ledger().timestamp();
-
         set_round(&env, round_id, &round);
-        Ok(())
+
+        // Automatically create next round
+        let next_round_id = round_id + 1;
+        let now = env.ledger().timestamp();
+        let betting_window_end = now + betting_window_seconds;
+
+        let next_round = Round {
+            id: next_round_id,
+            status: RoundStatus::Waiting,
+            server_seed_hash: next_server_seed_hash,
+            crash_multiplier: 0,
+            created_at: now,
+            started_at: 0,
+            ended_at: 0,
+            betting_window_end,
+            total_bet_amount: 0,
+            total_payout: 0,
+            bet_count: 0,
+            client_seeds: Vec::new(&env),
+        };
+
+        set_round(&env, next_round_id, &next_round);
+        set_current_round_id(&env, next_round_id); // Update current round
+
+        Ok(next_round_id)
     }
 
     /// Get round details
@@ -296,6 +346,33 @@ impl BalloonFlyContract {
     /// Get pool statistics
     pub fn get_pool(env: Env) -> Pool {
         get_pool(&env)
+    }
+
+    /// Get current active round
+    pub fn get_current_round(env: Env) -> Result<Round, Error> {
+        let current_round_id = get_current_round_id(&env)
+            .ok_or(Error::NoActiveRound)?;
+        get_round(&env, current_round_id)
+    }
+
+    /// Get current round ID
+    pub fn get_current_round_id(env: Env) -> Option<u64> {
+        get_current_round_id(&env)
+    }
+
+    /// Check if current round can be started
+    /// Returns true if round is Waiting and betting window has expired
+    pub fn can_start_round(env: Env) -> Result<bool, Error> {
+        let current_round_id = get_current_round_id(&env)
+            .ok_or(Error::NoActiveRound)?;
+        let round = get_round(&env, current_round_id)?;
+        
+        if round.status != RoundStatus::Waiting {
+            return Ok(false);
+        }
+        
+        let now = env.ledger().timestamp();
+        Ok(now >= round.betting_window_end)
     }
 }
 

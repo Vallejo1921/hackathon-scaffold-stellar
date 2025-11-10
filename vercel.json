@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/rounds/auto-start",
+      "schedule": "*/10 * * * * *"
+    },
+    {
+      "path": "/api/rounds/auto-finalize",
+      "schedule": "*/5 * * * * *"
+    }
+  ]
+}
+

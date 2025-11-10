@@ -5,6 +5,7 @@ use crate::{error::Error, types::{Bet, Pool, Round}};
 // Storage keys
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const POOL: Symbol = symbol_short!("POOL");
+pub const CURRENT_ROUND_ID: Symbol = symbol_short!("CURR_RND");
 
 // Constants
 pub const HOUSE_EDGE_BPS: u32 = 300; // 3% = 300 basis points
@@ -68,5 +69,15 @@ pub fn get_pool(env: &Env) -> Pool {
 /// Set pool statistics
 pub fn set_pool(env: &Env, pool: &Pool) {
     env.storage().instance().set(&POOL, pool);
+}
+
+/// Get current round ID
+pub fn get_current_round_id(env: &Env) -> Option<u64> {
+    env.storage().instance().get(&CURRENT_ROUND_ID)
+}
+
+/// Set current round ID
+pub fn set_current_round_id(env: &Env, round_id: u64) {
+    env.storage().instance().set(&CURRENT_ROUND_ID, &round_id);
 }
 

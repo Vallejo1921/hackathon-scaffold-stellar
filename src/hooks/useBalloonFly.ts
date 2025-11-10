@@ -100,10 +100,10 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
     }
   }, []);
 
-  // Fetch current round
-  const fetchCurrentRound = useCallback(async (roundId: bigint) => {
+  // Fetch current round using get_current_round
+  const fetchCurrentRound = useCallback(async () => {
     try {
-      const roundData = await balloonFlyClient.get_round({ round_id: roundId });
+      const roundData = await balloonFlyClient.get_current_round();
       if (roundData.result) {
         const round = roundData.result as unknown as Round;
         setCurrentRound(round);
@@ -127,7 +127,9 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
         }
       }
     } catch (err) {
-      console.error("Error fetching round:", err);
+      console.error("Error fetching current round:", err);
+      // If no active round, set to null
+      setCurrentRound(null);
     }
   }, []);
 
@@ -186,7 +188,7 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
       }
 
       // Refresh round data
-      await fetchCurrentRound(currentRound.id);
+      await fetchCurrentRound();
     } catch (err: any) {
       console.error("Error placing bet:", err);
       setError(err.message || "Failed to place bet");
@@ -244,32 +246,51 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
     }
   }, [address, userBet, isFlying, currentMultiplier, currentRound, fetchCurrentRound]);
 
-  // Simulate multiplier increase (in production, this would come from contract events)
+  // Calculate multiplier based on elapsed time since round started
+  // Formula: multiplier = 1 + (time_elapsed^1.55 * 1.6) / 100
   useEffect(() => {
-    if (!isFlying) {
+    if (!isFlying || !currentRound || currentRound.started_at === 0n) {
       setCurrentMultiplier(1.0);
       return;
     }
 
     const interval = setInterval(() => {
-      setCurrentMultiplier((prev) => {
-        const newMult = prev + 0.01;
-        
-        // Check if crashed
-        if (currentRound && currentRound.crash_multiplier > 0) {
-          const crashMult = multiplierToNumber(currentRound.crash_multiplier);
-          if (newMult >= crashMult) {
-            setIsFlying(false);
-            return crashMult;
-          }
+      const now = BigInt(Math.floor(Date.now() / 1000));
+      const startedAt = currentRound.started_at;
+      const elapsedSeconds = Number(now - startedAt);
+      
+      if (elapsedSeconds < 0) {
+        setCurrentMultiplier(1.0);
+        return;
+      }
+      
+      // Calculate multiplier: 1 + (t^1.55 * 1.6) / 100
+      const multiplier = 1.0 + (Math.pow(elapsedSeconds, 1.55) * 1.6) / 100;
+      
+      // Check if crashed
+      if (currentRound.crash_multiplier > 0) {
+        const crashMult = multiplierToNumber(currentRound.crash_multiplier);
+        if (multiplier >= crashMult) {
+          setIsFlying(false);
+          setCurrentMultiplier(crashMult);
+          return;
         }
-        
-        return newMult;
-      });
-    }, 100);
+      }
+      
+      setCurrentMultiplier(multiplier);
+    }, 100); // Update every 100ms for smooth animation
 
     return () => clearInterval(interval);
   }, [isFlying, currentRound, multiplierToNumber]);
+
+  // Fetch current round on mount and poll for updates
+  useEffect(() => {
+    fetchCurrentRound();
+    
+    // Poll for round updates every 2 seconds
+    const interval = setInterval(fetchCurrentRound, 2000);
+    return () => clearInterval(interval);
+  }, [fetchCurrentRound]);
 
   // Fetch pool on mount
   useEffect(() => {

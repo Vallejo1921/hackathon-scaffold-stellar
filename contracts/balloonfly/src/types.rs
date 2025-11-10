@@ -18,6 +18,7 @@ pub struct Round {
     pub created_at: u64,
     pub started_at: u64,
     pub ended_at: u64,
+    pub betting_window_end: u64, // Timestamp when betting window closes
     pub total_bet_amount: i128,
     pub total_payout: i128,
     pub bet_count: u32,

@@ -30,5 +30,9 @@ pub enum Error {
     TransferFailed = 12,
     /// Admin not initialized
     AdminNotInitialized = 13,
+    /// Round already active (Waiting or InProgress)
+    RoundAlreadyActive = 14,
+    /// No active round found
+    NoActiveRound = 15,
 }
 
