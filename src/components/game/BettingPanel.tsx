@@ -539,11 +539,11 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent re-renders unless props actually changed
+  // Ignore function reference changes - they're stable enough
   return (
     prevProps.isActive === nextProps.isActive &&
-    prevProps.loading === nextProps.loading &&
-    prevProps.onBet === nextProps.onBet &&
-    prevProps.onCashOut === nextProps.onCashOut
+    prevProps.loading === nextProps.loading
+    // Don't compare functions - they may change but behavior is the same
   );
 });
 
