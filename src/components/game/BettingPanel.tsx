@@ -216,7 +216,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: "12px",
+            marginBottom: "8px",
             border: "2px solid #3a3f5c"
           }}>
             <button
@@ -342,8 +342,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
           <div style={{
             display: "flex",
             flexDirection: "column",
-            gap: "12px",
-            marginTop: "auto"
+            gap: "12px"
           }}>
             {/* Auto Bet Toggle */}
             <div style={{
