@@ -1,13 +1,30 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useBalloonFlyContext } from "../../contexts/BalloonFlyContext";
+import AnimatedBackground from "./AnimatedBackground";
+import ProgressCurve from "./ProgressCurve";
+import AnimatedBalloon from "./AnimatedBalloon";
 
 const GameCanvas: React.FC = () => {
   const { currentMultiplier, isFlying, currentRound } = useBalloonFlyContext();
-  
-  const balloonEmoji = isFlying ? "🎈" : currentRound?.status === "Ended" ? "💥" : "🎈";
-  const statusMessage = !isFlying && currentRound?.status === "Waiting" 
-    ? "🎈 Waiting for bets..." 
-    : "";
+  const [isExploding, setIsExploding] = useState(false);
+  const [lastFlyingState, setLastFlyingState] = useState(false);
+
+  // Calcular progresso baseado no multiplicador (0-1)
+  // Multiplicador mínimo: 1.0, máximo esperado: 100.0
+  const maxMultiplier = 100;
+  const minMultiplier = 1.0;
+  const progress = Math.max(0, Math.min((currentMultiplier - minMultiplier) / (maxMultiplier - minMultiplier), 1));
+
+  // Detectar crash (quando isFlying muda de true para false)
+  useEffect(() => {
+    if (lastFlyingState && !isFlying && currentMultiplier > 1.0) {
+      setIsExploding(true);
+      setTimeout(() => {
+        setIsExploding(false);
+      }, 1000);
+    }
+    setLastFlyingState(isFlying);
+  }, [isFlying, lastFlyingState, currentMultiplier]);
 
   const getMultiplierColor = (mult: number) => {
     if (mult < 2.0) return "#3B82F6";
@@ -15,16 +32,40 @@ const GameCanvas: React.FC = () => {
     return "#EF4444";
   };
 
+  const statusMessage = !isFlying && currentRound?.status === "Waiting" 
+    ? "🎈 Waiting for bets..." 
+    : "";
+
   return (
     <div style={{
       flex: 1,
       position: "relative",
-      background: "linear-gradient(135deg, #1a1d29 0%, #2d1b4e 50%, #1a1d29 100%)",
+      background: "#0a0e1a",
       display: "flex",
       alignItems: "center",
-      justifyContent: "center"
+      justifyContent: "center",
+      overflow: "hidden"
     }}>
-      {/* Multiplier Display */}
+      {/* Fundo Animado - Linhas Radiais */}
+      <AnimatedBackground progress={progress} />
+
+      {/* Curva de Progresso - Aparece apenas quando está voando */}
+      {isFlying && currentMultiplier > 1.0 && (
+        <ProgressCurve 
+          progress={progress} 
+          color={getMultiplierColor(currentMultiplier)} 
+        />
+      )}
+
+      {/* Balão/Aviador Animado */}
+      <AnimatedBalloon
+        progress={progress}
+        color={getMultiplierColor(currentMultiplier)}
+        isFlying={isFlying}
+        isExploding={isExploding}
+      />
+
+      {/* Multiplier Display - Centralizado na curva */}
       <div style={{
         position: "absolute",
         top: "50%",
@@ -33,24 +74,13 @@ const GameCanvas: React.FC = () => {
         fontSize: "140px",
         fontWeight: 900,
         color: getMultiplierColor(currentMultiplier),
-        textShadow: `0 0 40px ${getMultiplierColor(currentMultiplier)}`,
+        textShadow: `0 0 40px ${getMultiplierColor(currentMultiplier)}, 0 0 80px ${getMultiplierColor(currentMultiplier)}`,
         zIndex: 10,
-        transition: "all 0.1s"
+        transition: "all 0.1s",
+        pointerEvents: "none",
+        fontFamily: "system-ui, -apple-system, sans-serif"
       }}>
         {currentMultiplier.toFixed(2)}x
-      </div>
-
-      {/* Balloon */}
-      <div style={{
-        position: "absolute",
-        bottom: "30%",
-        left: "35%",
-        fontSize: "120px",
-        filter: `drop-shadow(0 0 20px ${getMultiplierColor(currentMultiplier)})`,
-        color: getMultiplierColor(currentMultiplier),
-        animation: balloonEmoji === "🎈" && isFlying ? "float 3s ease-in-out infinite" : "none"
-      }}>
-        {balloonEmoji}
       </div>
 
       {/* Status Message */}
@@ -68,7 +98,8 @@ const GameCanvas: React.FC = () => {
           fontSize: "24px",
           fontWeight: 700,
           color: "#8b5cf6",
-          animation: "bounce 2s ease-in-out infinite"
+          animation: "bounce 2s ease-in-out infinite",
+          zIndex: 20
         }}>
           {statusMessage}
         </div>
@@ -85,7 +116,8 @@ const GameCanvas: React.FC = () => {
         display: "flex",
         alignItems: "center",
         gap: "12px",
-        backdropFilter: "blur(10px)"
+        backdropFilter: "blur(10px)",
+        zIndex: 20
       }}>
         <div style={{ display: "flex", gap: "4px" }}>
           {["🎈", "🎯", "⭐"].map((emoji, i) => (
@@ -121,17 +153,14 @@ const GameCanvas: React.FC = () => {
           borderRadius: "8px",
           backdropFilter: "blur(10px)",
           fontSize: "12px",
-          color: "#8b8fa3"
+          color: "#8b8fa3",
+          zIndex: 20
         }}>
           Round #{currentRound.id.toString()}
         </div>
       )}
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-20px); }
-        }
         @keyframes bounce {
           0%, 100% { transform: translateX(-50%) translateY(0); }
           50% { transform: translateX(-50%) translateY(-10px); }
