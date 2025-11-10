@@ -13,7 +13,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
   onCashOut,
   loading = false
 }) => {
-  // Use refs to persist state across re-renders - NEVER reset to anything other than 1.0
+  // Use refs to persist state across re-renders
   const stateRef = useRef({
     betAmount: 1.0,
     activeTab: "manual" as "manual" | "auto",
@@ -131,6 +131,11 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
       onBet(betAmount);
     }
   }, [isActive, onBet, onCashOut, betAmount]);
+
+  // Calculate if buttons should be large (same size as main button)
+  const isAutoMode = activeTab === "auto";
+  const buttonPadding = isAutoMode ? "18px" : "10px";
+  const buttonMinHeight = isAutoMode ? "60px" : "auto";
 
   return (
     <div style={{
@@ -304,7 +309,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
           {/* Quick Amount Buttons - Show in BOTH modes, different sizes */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: activeTab === "auto" ? "1fr" : "1fr 1fr",
+            gridTemplateColumns: isAutoMode ? "1fr" : "1fr 1fr",
             gap: "8px",
             marginBottom: "12px"
           }}>
@@ -314,7 +319,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 type="button"
                 onClick={() => handleQuickAmount(amount)}
                 style={{
-                  padding: activeTab === "auto" ? "18px" : "10px",
+                  padding: buttonPadding,
                   background: "#3a3f5c",
                   border: "none",
                   borderRadius: "8px",
@@ -326,7 +331,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  minHeight: activeTab === "auto" ? "60px" : "auto"
+                  minHeight: buttonMinHeight
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "#8b5cf6";
