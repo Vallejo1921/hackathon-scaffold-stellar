@@ -23,20 +23,15 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
   });
 
   // Initialize betAmount - always start with 1.0
-  // Only use localStorage if user explicitly set a value (and it's >= 1.0)
   const [betAmount, setBetAmountState] = useState(() => {
-    // Always default to 1.0
     let initialAmount = 1.0;
-    
     const saved = localStorage.getItem("balloonfly_bet_amount");
     if (saved) {
       const amount = parseFloat(saved);
-      // Only use saved value if it's valid and >= 1.0
       if (!isNaN(amount) && amount >= 1.0) {
         initialAmount = amount;
       }
     }
-    
     stateRef.current.betAmount = initialAmount;
     return initialAmount;
   });
@@ -47,7 +42,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
       stateRef.current.activeTab = saved;
       return saved;
     }
-    return "manual"; // Default to manual
+    return "manual";
   });
 
   // Auto bet settings
@@ -72,7 +67,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
     return 1.10;
   });
 
-  // Wrapper functions that update both state and ref
+  // Wrapper functions
   const setBetAmount = useCallback((amount: number | ((prev: number) => number)) => {
     const newAmount = typeof amount === 'function' ? amount(stateRef.current.betAmount) : amount;
     const clamped = Math.max(1.0, newAmount);
@@ -87,7 +82,6 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
     localStorage.setItem("balloonfly_bet_tab", tab);
   }, []);
 
-  // Wrapper functions for auto settings
   const setAutoBetEnabled = useCallback((enabled: boolean) => {
     stateRef.current.autoBetEnabled = enabled;
     setAutoBetEnabledState(enabled);
@@ -107,7 +101,7 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
     localStorage.setItem("balloonfly_auto_cashout_mult", clamped.toString());
   }, []);
 
-  // Sync ref with state - but don't cause re-renders
+  // Sync ref with state
   useEffect(() => {
     stateRef.current.betAmount = betAmount;
     stateRef.current.activeTab = activeTab;
@@ -145,7 +139,8 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
       borderRadius: "12px",
       padding: "20px",
       display: "flex",
-      flexDirection: "column"
+      flexDirection: "column",
+      minHeight: "0"
     }}>
       {/* Tabs */}
       <div style={{
@@ -194,16 +189,19 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
         </button>
       </div>
 
+      {/* Main Content - Side by Side Layout */}
       <div style={{
         display: "flex",
         gap: "16px",
-        flex: 1
+        flex: 1,
+        alignItems: "flex-start"
       }}>
         {/* Left Section - Bet Amount and Controls */}
         <div style={{ 
           flex: 1,
           display: "flex",
-          flexDirection: "column"
+          flexDirection: "column",
+          minWidth: 0
         }}>
           <div style={{
             color: "#8b8fa3",
@@ -241,7 +239,8 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 transition: "all 0.2s",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                justifyContent: "center",
+                flexShrink: 0
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "#8b5cf6";
@@ -264,9 +263,10 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 color: "#fff",
                 fontSize: "20px",
                 fontWeight: 700,
-                width: "120px",
+                flex: 1,
                 textAlign: "center",
-                outline: "none"
+                outline: "none",
+                minWidth: 0
               }}
             />
             <button
@@ -285,7 +285,8 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                 transition: "all 0.2s",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                justifyContent: "center",
+                flexShrink: 0
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "#8b5cf6";
@@ -373,7 +374,8 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                     position: "relative",
                     cursor: "pointer",
                     transition: "all 0.3s",
-                    padding: "2px"
+                    padding: "2px",
+                    flexShrink: 0
                   }}
                 >
                   <div style={{
@@ -454,7 +456,8 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
                       position: "relative",
                       cursor: "pointer",
                       transition: "all 0.3s",
-                      padding: "2px"
+                      padding: "2px",
+                      flexShrink: 0
                     }}
                   >
                     <div style={{
@@ -476,7 +479,8 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
         <div style={{ 
           flex: 1,
           display: "flex",
-          alignItems: "stretch"
+          alignItems: "stretch",
+          minWidth: 0
         }}>
           <button
             type="button"
@@ -501,7 +505,8 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
               justifyContent: "center",
               gap: "4px",
               animation: isActive ? "pulse 1s ease-in-out infinite" : "none",
-              opacity: loading ? 0.6 : 1
+              opacity: loading ? 0.6 : 1,
+              alignSelf: "stretch"
             }}
             onMouseEnter={(e) => {
               if (!isActive && !loading) {
@@ -543,11 +548,9 @@ const BettingPanel: React.FC<BettingPanelProps> = React.memo(({
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent re-renders unless props actually changed
-  // Ignore function reference changes - they're stable enough
   return (
     prevProps.isActive === nextProps.isActive &&
     prevProps.loading === nextProps.loading
-    // Don't compare functions - they may change but behavior is the same
   );
 });
 
