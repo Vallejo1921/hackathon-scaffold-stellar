@@ -3,11 +3,30 @@ import { useBalloonFlyContext } from "../../contexts/BalloonFlyContext";
 
 const BetsSidebar: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"bets" | "previous" | "top">("bets");
-  const { pool, formatXLM, currentRound, userBet } = useBalloonFlyContext();
+  const { pool, formatXLM, currentRound, userBet, pastRounds, multiplierToNumber } = useBalloonFlyContext();
 
-  // TODO: Implement bet listing from contract events or add get_round_bets function
-  // For now, we only show the user's bet if they have one
-  const bets = userBet ? [userBet] : [];
+  // Get rounds data for Previous/Top tabs
+  const getRoundsData = () => {
+    if (activeTab === "previous") {
+      // Previous rounds - show last 10 ended rounds
+      return pastRounds
+        .filter(r => r.status === "Ended")
+        .slice(0, 10);
+    } else if (activeTab === "top") {
+      // Top rounds - show rounds with highest payouts
+      return pastRounds
+        .filter(r => r.status === "Ended" && r.total_payout > 0n)
+        .sort((a, b) => {
+          const payoutA = Number(a.total_payout);
+          const payoutB = Number(b.total_payout);
+          return payoutB - payoutA;
+        })
+        .slice(0, 10);
+    }
+    return [];
+  };
+
+  const roundsData = getRoundsData();
 
   const getMultiplierColor = (mult: number | null) => {
     if (!mult) return "";
@@ -104,10 +123,10 @@ const BetsSidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Bets List Header */}
+      {/* List Header - Dynamic based on tab */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "2fr 1fr 1fr 1fr",
+        gridTemplateColumns: activeTab === "bets" ? "2fr 1fr 1fr 1fr" : "1fr 1fr 1fr 1fr",
         padding: "12px 16px",
         background: "#252837",
         fontSize: "11px",
@@ -115,99 +134,178 @@ const BetsSidebar: React.FC = () => {
         textTransform: "uppercase",
         fontWeight: 600
       }}>
-        <span>Player</span>
-        <span>Bet</span>
-        <span>X</span>
-        <span>Prize</span>
+        {activeTab === "bets" ? (
+          <>
+            <span>Player</span>
+            <span>Bet</span>
+            <span>X</span>
+            <span>Prize</span>
+          </>
+        ) : (
+          <>
+            <span>Round</span>
+            <span>Bets</span>
+            <span>Multiplier</span>
+            <span>Payout</span>
+          </>
+        )}
       </div>
 
-      {/* Bets List */}
+      {/* List Content */}
       <div style={{
         flex: 1,
         overflowY: "auto"
       }}>
-        {bets.length === 0 ? (
-          <div style={{
-            padding: "40px 20px",
-            textAlign: "center",
-            color: "#8b8fa3"
-          }}>
-            <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎈</div>
-            <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px", color: "#fff" }}>
-              No bets yet
+        {activeTab === "bets" ? (
+          // Bets tab - show user's bet
+          !userBet ? (
+            <div style={{
+              padding: "40px 20px",
+              textAlign: "center",
+              color: "#8b8fa3"
+            }}>
+              <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎈</div>
+              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px", color: "#fff" }}>
+                No bets yet
+              </div>
+              <div style={{ fontSize: "12px" }}>
+                Be the first to place a bet!
+              </div>
             </div>
-            <div style={{ fontSize: "12px" }}>
-              Be the first to place a bet!
-            </div>
-          </div>
-        ) : (
-          bets.map((bet) => {
-            const multiplier = bet.cash_out_multiplier > 0n 
-              ? Number(bet.cash_out_multiplier) / 100 
-              : null;
-            const payout = bet.payout > 0n 
-              ? Number(bet.payout) / 10_000_000 
-              : null;
-            const playerAddress = bet.player;
-            const shortAddress = playerAddress.length > 12 
-              ? `${playerAddress.slice(0, 6)}...${playerAddress.slice(-6)}`
-              : playerAddress;
-            
-            // Generate avatar emoji from address
-            const avatars = ["🎈", "🎯", "⭐", "💎", "🚀", "🌟", "🎲", "🏆"];
-            const avatarIndex = parseInt(playerAddress.slice(-2) || "0", 16) % avatars.length;
-            const avatar = avatars[avatarIndex];
+          ) : (
+            (() => {
+              const bet = userBet;
+              const multiplier = bet.cash_out_multiplier > 0n 
+                ? Number(bet.cash_out_multiplier) / 100 
+                : null;
+              const payout = bet.payout > 0n 
+                ? Number(bet.payout) / 10_000_000 
+                : null;
+              const playerAddress = bet.player;
+              const shortAddress = playerAddress.length > 12 
+                ? `${playerAddress.slice(0, 6)}...${playerAddress.slice(-6)}`
+                : playerAddress;
+              
+              // Generate avatar emoji from address
+              const avatars = ["🎈", "🎯", "⭐", "💎", "🚀", "🌟", "🎲", "🏆"];
+              const avatarIndex = parseInt(playerAddress.slice(-2) || "0", 16) % avatars.length;
+              const avatar = avatars[avatarIndex];
 
-            return (
-              <div
-                key={bet.id.toString()}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "2fr 1fr 1fr 1fr",
-                  padding: "12px 16px",
-                  borderBottom: "1px solid #252837",
-                  alignItems: "center",
-                  background: payout ? "rgba(124, 58, 237, 0.05)" : "transparent",
-                  transition: "background 0.2s"
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
-                    display: "flex",
+              return (
+                <div
+                  key={bet.id.toString()}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1fr 1fr 1fr",
+                    padding: "12px 16px",
+                    borderBottom: "1px solid #252837",
                     alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "12px"
-                  }}>
-                    {avatar}
+                    background: payout ? "rgba(124, 58, 237, 0.05)" : "transparent",
+                    transition: "background 0.2s"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px"
+                    }}>
+                      {avatar}
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#fff", fontFamily: "'Courier New', monospace" }}>
+                      {shortAddress}
+                    </span>
                   </div>
-                  <span style={{ fontSize: "11px", color: "#fff", fontFamily: "'Courier New', monospace" }}>
-                    {shortAddress}
+                  <span style={{ fontSize: "13px", color: "#8b8fa3" }}>
+                    {formatXLM(bet.amount)}
+                  </span>
+                  <span style={{ 
+                    fontSize: "13px", 
+                    color: multiplier ? getMultiplierColor(multiplier) : "#8b8fa3", 
+                    fontWeight: multiplier ? 600 : 400 
+                  }}>
+                    {multiplier ? `${multiplier.toFixed(2)}x` : ""}
+                  </span>
+                  <span style={{ 
+                    fontSize: "13px", 
+                    color: payout ? "#10b981" : "#8b8fa3", 
+                    fontWeight: payout ? 600 : 400 
+                  }}>
+                    {payout ? `${payout.toFixed(2)}` : ""}
                   </span>
                 </div>
-                <span style={{ fontSize: "13px", color: "#8b8fa3" }}>
-                  {formatXLM(bet.amount)}
-                </span>
-                <span style={{ 
-                  fontSize: "13px", 
-                  color: multiplier ? getMultiplierColor(multiplier) : "#8b8fa3", 
-                  fontWeight: multiplier ? 600 : 400 
-                }}>
-                  {multiplier ? `${multiplier.toFixed(2)}x` : ""}
-                </span>
-                <span style={{ 
-                  fontSize: "13px", 
-                  color: payout ? "#10b981" : "#8b8fa3", 
-                  fontWeight: payout ? 600 : 400 
-                }}>
-                  {payout ? `${payout.toFixed(2)}` : ""}
-                </span>
+              );
+            })()
+          )
+        ) : (
+          // Previous/Top tabs - show rounds
+          roundsData.length === 0 ? (
+            <div style={{
+              padding: "40px 20px",
+              textAlign: "center",
+              color: "#8b8fa3"
+            }}>
+              <div style={{ fontSize: "48px", marginBottom: "12px" }}>📊</div>
+              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px", color: "#fff" }}>
+                No {activeTab === "previous" ? "previous" : "top"} rounds yet
               </div>
-            );
-          })
+              <div style={{ fontSize: "12px" }}>
+                {activeTab === "previous" 
+                  ? "Rounds will appear here after they end"
+                  : "Top rounds will appear here based on payouts"}
+              </div>
+            </div>
+          ) : (
+            roundsData.map((round) => {
+              const crashMult = round.crash_multiplier > 0n 
+                ? multiplierToNumber(round.crash_multiplier) 
+                : null;
+              const payout = round.total_payout > 0n 
+                ? Number(round.total_payout) / 10_000_000 
+                : 0;
+
+              return (
+                <div
+                  key={round.id.toString()}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                    padding: "12px 16px",
+                    borderBottom: "1px solid #252837",
+                    alignItems: "center",
+                    background: payout > 0 ? "rgba(124, 58, 237, 0.05)" : "transparent",
+                    transition: "background 0.2s"
+                  }}
+                >
+                  <span style={{ fontSize: "13px", color: "#fff", fontWeight: 600 }}>
+                    #{round.id.toString()}
+                  </span>
+                  <span style={{ fontSize: "13px", color: "#8b8fa3" }}>
+                    {round.bet_count}
+                  </span>
+                  <span style={{ 
+                    fontSize: "13px", 
+                    color: crashMult ? getMultiplierColor(crashMult) : "#8b8fa3", 
+                    fontWeight: crashMult ? 600 : 400 
+                  }}>
+                    {crashMult ? `${crashMult.toFixed(2)}x` : "—"}
+                  </span>
+                  <span style={{ 
+                    fontSize: "13px", 
+                    color: payout > 0 ? "#10b981" : "#8b8fa3", 
+                    fontWeight: payout > 0 ? 600 : 400 
+                  }}>
+                    {payout > 0 ? formatXLM(round.total_payout) : "—"}
+                  </span>
+                </div>
+              );
+            })
+          )
         )}
       </div>
 

@@ -14,6 +14,7 @@ interface BalloonFlyContextType {
   placeBet: (amount: number) => Promise<void>;
   cashOut: () => Promise<void>;
   fetchRoundDetails: (roundId: bigint) => Promise<Round | null>;
+  initializeFirstRound: () => Promise<void>;
   formatXLM: (stroops: bigint) => string;
   multiplierToNumber: (mult: bigint) => number;
 }

@@ -77,6 +77,7 @@ interface UseBalloonFlyReturn {
   placeBet: (amount: number) => Promise<void>;
   cashOut: () => Promise<void>;
   fetchRoundDetails: (roundId: bigint) => Promise<Round | null>;
+  initializeFirstRound: () => Promise<void>;
   
   // Utilities
   formatXLM: (stroops: bigint) => string;
@@ -295,6 +296,56 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
     }
   }, [address, userBet, isFlying, currentMultiplier, currentRound, fetchCurrentRound]);
 
+  // Initialize first round (admin only)
+  const initializeFirstRound = useCallback(async () => {
+    if (!address) {
+      setError("Please connect your wallet");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Check if there's already a current round
+      const currentRoundId = await balloonFlyClient.get_current_round_id();
+      if (currentRoundId.result) {
+        setError("Round already exists");
+        setLoading(false);
+        return;
+      }
+
+      // Generate server seed and hash
+      const serverSeed = new Uint8Array(32);
+      crypto.getRandomValues(serverSeed);
+      
+      // Hash the seed using Web Crypto API
+      const hashBuffer = await crypto.subtle.digest('SHA-256', serverSeed);
+      const hashArray = new Uint8Array(hashBuffer);
+      const serverSeedHash = Buffer.from(hashArray.slice(0, 32));
+
+      // Create first round (ID = 1)
+      const roundId = 1n;
+      const bettingWindowSeconds = 60n; // 60 seconds betting window
+
+      const result = await balloonFlyClient.create_round({
+        round_id: roundId,
+        server_seed_hash: serverSeedHash,
+        betting_window_seconds: bettingWindowSeconds,
+      });
+
+      if (result.result) {
+        console.log("First round created:", result.result);
+        await fetchCurrentRound();
+      }
+    } catch (err: any) {
+      console.error("Error initializing first round:", err);
+      setError(err.message || "Failed to initialize first round. Make sure you are the admin.");
+    } finally {
+      setLoading(false);
+    }
+  }, [address, fetchCurrentRound]);
+
   // Calculate multiplier based on elapsed time since round started
   // Formula: multiplier = 1 + (time_elapsed^1.55 * 1.6) / 100
   useEffect(() => {
@@ -362,6 +413,7 @@ export const useBalloonFly = (): UseBalloonFlyReturn => {
     placeBet,
     cashOut,
     fetchRoundDetails,
+    initializeFirstRound,
     formatXLM,
     multiplierToNumber,
   };
