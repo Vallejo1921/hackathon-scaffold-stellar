@@ -92,45 +92,50 @@ const GameContent: React.FC = () => {
           zIndex: 1000,
           background: "#0a0e1a",
           display: "flex",
-          flexDirection: "column"
+          flexDirection: "column",
+          padding: "12px"
         }}>
-          {/* Close Button */}
-          <button
-            onClick={handleExpandGame}
-            style={{
-              position: "absolute",
-              top: "20px",
-              right: "20px",
-              zIndex: 1001,
-              background: "rgba(30, 33, 48, 0.9)",
-              border: "1px solid #2a2d3e",
-              borderRadius: "8px",
-              padding: "10px 16px",
-              color: "#fff",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              transition: "all 0.2s",
-              backdropFilter: "blur(10px)"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
-              e.currentTarget.style.borderColor = "#EF4444";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(30, 33, 48, 0.9)";
-              e.currentTarget.style.borderColor = "#2a2d3e";
-            }}
-          >
-            <span>⤓</span>
-            <span>Exit</span>
-          </button>
+          {/* Close Button - Above the card */}
+          <div style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: "12px"
+          }}>
+            <button
+              onClick={handleExpandGame}
+              style={{
+                background: "rgba(30, 33, 48, 0.9)",
+                border: "1px solid #2a2d3e",
+                borderRadius: "8px",
+                padding: "10px 16px",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "all 0.2s",
+                backdropFilter: "blur(10px)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                e.currentTarget.style.borderColor = "#EF4444";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(30, 33, 48, 0.9)";
+                e.currentTarget.style.borderColor = "#2a2d3e";
+              }}
+            >
+              <span>⤓</span>
+              <span>Exit</span>
+            </button>
+          </div>
 
           {/* Expanded Full Game Card */}
-          <MainGameCard />
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <MainGameCard />
+          </div>
         </div>
       )}
 
