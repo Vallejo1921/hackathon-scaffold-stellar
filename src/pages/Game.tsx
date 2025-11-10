@@ -42,6 +42,43 @@ const GameContent: React.FC = () => {
     setIsGameExpanded(!isGameExpanded);
   };
 
+  // Componente reutilizável do card principal do game
+  const MainGameCard: React.FC = () => (
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      width: "100%",
+      height: "100%",
+      borderRadius: isGameExpanded ? "0" : "12px",
+      overflow: "hidden",
+      boxShadow: isGameExpanded ? "none" : "0 20px 60px rgba(0, 0, 0, 0.5)",
+      background: "#0a0e1a"
+    }}>
+      {/* Game Header */}
+      <GameHeader onMenuClick={() => setIsMenuOpen(true)} />
+      
+      <div style={{
+        display: "flex",
+        flex: 1,
+        overflow: "hidden"
+      }}>
+        <BetsSidebar />
+        
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          background: "#1a1d29",
+          overflow: "hidden"
+        }}>
+          <HistoryBar history={history} onRoundClick={handleRoundClick} />
+          <GameCanvas />
+          <BettingControls />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* Expanded Game View - Overlay */}
@@ -55,60 +92,45 @@ const GameContent: React.FC = () => {
           zIndex: 1000,
           background: "#0a0e1a",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
+          flexDirection: "column"
         }}>
-          <div style={{
-            position: "relative",
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column"
-          }}>
-            {/* Close Button */}
-            <button
-              onClick={handleExpandGame}
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                zIndex: 1001,
-                background: "rgba(30, 33, 48, 0.9)",
-                border: "1px solid #2a2d3e",
-                borderRadius: "8px",
-                padding: "10px 16px",
-                color: "#fff",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                transition: "all 0.2s",
-                backdropFilter: "blur(10px)"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
-                e.currentTarget.style.borderColor = "#EF4444";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(30, 33, 48, 0.9)";
-                e.currentTarget.style.borderColor = "#2a2d3e";
-              }}
-            >
-              <span>⤓</span>
-              <span>Exit</span>
-            </button>
+          {/* Close Button */}
+          <button
+            onClick={handleExpandGame}
+            style={{
+              position: "absolute",
+              top: "20px",
+              right: "20px",
+              zIndex: 1001,
+              background: "rgba(30, 33, 48, 0.9)",
+              border: "1px solid #2a2d3e",
+              borderRadius: "8px",
+              padding: "10px 16px",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              transition: "all 0.2s",
+              backdropFilter: "blur(10px)"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+              e.currentTarget.style.borderColor = "#EF4444";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(30, 33, 48, 0.9)";
+              e.currentTarget.style.borderColor = "#2a2d3e";
+            }}
+          >
+            <span>⤓</span>
+            <span>Exit</span>
+          </button>
 
-            {/* Expanded Game Canvas */}
-            <div style={{
-              flex: 1,
-              width: "100%",
-              height: "100%"
-            }}>
-              <GameCanvas />
-            </div>
-          </div>
+          {/* Expanded Full Game Card */}
+          <MainGameCard />
         </div>
       )}
 
@@ -126,39 +148,12 @@ const GameContent: React.FC = () => {
         }}>
           {/* Main Game Card */}
           <div style={{
-            display: "flex",
-            flexDirection: "column",
             width: "100%",
             maxWidth: "1400px",
             height: "calc(100vh - 144px)",
-            maxHeight: "calc(100vh - 144px)",
-            borderRadius: "12px",
-            overflow: "hidden",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
-            background: "#0a0e1a"
+            maxHeight: "calc(100vh - 144px)"
           }}>
-            {/* Game Header */}
-            <GameHeader onMenuClick={() => setIsMenuOpen(true)} />
-            
-            <div style={{
-              display: "flex",
-              flex: 1,
-              overflow: "hidden"
-            }}>
-              <BetsSidebar />
-              
-              <div style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                background: "#1a1d29",
-                overflow: "hidden"
-              }}>
-                <HistoryBar history={history} onRoundClick={handleRoundClick} />
-                <GameCanvas />
-                <BettingControls />
-              </div>
-            </div>
+            <MainGameCard />
           </div>
 
           {/* Footer Card - Below main game card */}
