@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { useWallet } from "../hooks/useWallet";
 import { useNavigate } from "react-router-dom";
-import { BalloonFlyProvider, useBalloonFlyContext } from "../contexts/BalloonFlyContext";
+import {
+  BalloonFlyProvider,
+  useBalloonFlyContext,
+} from "../contexts/BalloonFlyContext";
 import BetsSidebar from "../components/game/BetsSidebar";
 import GameCanvas from "../components/game/GameCanvas";
 import HistoryBar from "../components/game/HistoryBar";
@@ -12,6 +15,70 @@ import GameHeader from "../components/game/GameHeader";
 import HamburgerMenu from "../components/game/HamburgerMenu";
 import RoundDetailsModal from "../components/game/RoundDetailsModal";
 import { Round } from "../contexts/BalloonFlyContext";
+import { RoundStatus } from "../hooks/useBalloonFly";
+
+// Reusable main game card component
+const MainGameCard: React.FC<{
+  isGameExpanded: boolean;
+  onRoundClick: (roundId: bigint) => void;
+  onMenuClick: () => void;
+}> = ({ isGameExpanded, onRoundClick, onMenuClick }) => {
+  const { pastRounds } = useBalloonFlyContext();
+
+  // Convert round history to HistoryBar format
+  const history = pastRounds
+    .filter(
+      (round) => round.status === RoundStatus.Ended && round.crash_multiplier,
+    )
+    .map((round) => ({
+      roundId: round.id,
+      multiplier: Number(round.crash_multiplier) / 100,
+      timestamp: round.ended_at || round.started_at || round.created_at,
+    }))
+    .reverse(); // Most recent first
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        borderRadius: isGameExpanded ? "0" : "12px",
+        overflow: "hidden",
+        boxShadow: isGameExpanded ? "none" : "0 20px 60px rgba(0, 0, 0, 0.5)",
+        background: "#0a0e1a",
+      }}
+    >
+      {/* Game Header */}
+      <GameHeader onMenuClick={onMenuClick} />
+
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          overflow: "hidden",
+        }}
+      >
+        <BetsSidebar />
+
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            background: "#1a1d29",
+            overflow: "hidden",
+          }}
+        >
+          <HistoryBar history={history} onRoundClick={onRoundClick} />
+          <GameCanvas />
+          <BettingControls />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const GameContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,89 +86,53 @@ const GameContent: React.FC = () => {
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
   const { pastRounds, fetchRoundDetails, formatXLM } = useBalloonFlyContext();
 
-  // Converter histórico de rodadas para formato do HistoryBar
-  const history = pastRounds
-    .filter(round => round.status === "Ended" && round.crash_multiplier)
-    .map(round => ({
-      roundId: round.id,
-      multiplier: Number(round.crash_multiplier) / 100,
-      timestamp: round.ended_at || round.started_at || round.created_at
-    }))
-    .reverse(); // Mais recentes primeiro
+  const handleRoundClick = (roundId: bigint) => {
+    void (async () => {
+      try {
+        const roundDetails = await fetchRoundDetails(roundId);
+        setSelectedRound(roundDetails);
+      } catch (error) {
+        console.error("Error fetching round details:", error);
+      }
+    })();
+  };
 
-  const handleRoundClick = async (roundId: bigint) => {
-    try {
-      const roundDetails = await fetchRoundDetails(roundId);
-      setSelectedRound(roundDetails);
-    } catch (error) {
-      console.error("Error fetching round details:", error);
-    }
+  const handleMenuClick = () => {
+    setIsMenuOpen(true);
   };
 
   const handleExpandGame = () => {
     setIsGameExpanded(!isGameExpanded);
   };
 
-  // Componente reutilizável do card principal do game
-  const MainGameCard: React.FC = () => (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      width: "100%",
-      height: "100%",
-      borderRadius: isGameExpanded ? "0" : "12px",
-      overflow: "hidden",
-      boxShadow: isGameExpanded ? "none" : "0 20px 60px rgba(0, 0, 0, 0.5)",
-      background: "#0a0e1a"
-    }}>
-      {/* Game Header */}
-      <GameHeader onMenuClick={() => setIsMenuOpen(true)} />
-      
-      <div style={{
-        display: "flex",
-        flex: 1,
-        overflow: "hidden"
-      }}>
-        <BetsSidebar />
-        
-        <div style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          background: "#1a1d29",
-          overflow: "hidden"
-        }}>
-          <HistoryBar history={history} onRoundClick={handleRoundClick} />
-          <GameCanvas />
-          <BettingControls />
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <>
       {/* Expanded Game View - Overlay */}
       {isGameExpanded && (
-        <div style={{
-          position: "fixed",
-          top: "70px", // Below main header (Layout.Header)
-          left: 0,
-          right: 0,
-          bottom: "70px", // Above main footer (Layout.Footer)
-          zIndex: 1000,
-          background: "#0a0e1a",
-          display: "flex",
-          flexDirection: "column",
-          padding: "12px"
-        }}>
-          {/* Close Button - Above the card */}
-          <div style={{
+        <div
+          style={{
+            position: "fixed",
+            top: "70px", // Below main header (Layout.Header)
+            left: 0,
+            right: 0,
+            bottom: "70px", // Above main footer (Layout.Footer)
+            zIndex: 1000,
+            background: "#0a0e1a",
             display: "flex",
-            justifyContent: "flex-end",
-            marginBottom: "12px"
-          }}>
+            flexDirection: "column",
+            padding: "12px",
+          }}
+        >
+          {/* Close Button - Above the card */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginBottom: "12px",
+            }}
+          >
             <button
+              type="button"
               onClick={handleExpandGame}
               style={{
                 background: "rgba(30, 33, 48, 0.9)",
@@ -116,7 +147,7 @@ const GameContent: React.FC = () => {
                 alignItems: "center",
                 gap: "8px",
                 transition: "all 0.2s",
-                backdropFilter: "blur(10px)"
+                backdropFilter: "blur(10px)",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
@@ -134,65 +165,75 @@ const GameContent: React.FC = () => {
 
           {/* Expanded Full Game Card */}
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <MainGameCard />
+            <MainGameCard
+              isGameExpanded={isGameExpanded}
+              onRoundClick={handleRoundClick}
+              onMenuClick={handleMenuClick}
+            />
           </div>
         </div>
       )}
 
       {/* Normal View */}
       {!isGameExpanded && (
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "calc(100vh - 120px)",
-          padding: "12px",
-          background: "#0a0e1a",
-          gap: "16px"
-        }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "calc(100vh - 120px)",
+            padding: "12px",
+            background: "#0a0e1a",
+            gap: "16px",
+          }}
+        >
           {/* Main Game Card */}
-          <div style={{
-            width: "100%",
-            maxWidth: "1400px",
-            height: "calc(100vh - 144px)",
-            maxHeight: "calc(100vh - 144px)"
-          }}>
-            <MainGameCard />
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "1400px",
+              height: "calc(100vh - 144px)",
+              maxHeight: "calc(100vh - 144px)",
+            }}
+          >
+            <MainGameCard
+              isGameExpanded={isGameExpanded}
+              onRoundClick={handleRoundClick}
+              onMenuClick={handleMenuClick}
+            />
           </div>
 
           {/* Footer Card - Below main game card */}
-          <div style={{
-            width: "100%",
-            maxWidth: "1400px"
-          }}>
-            <GameFooterCard 
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "1400px",
+            }}
+          >
+            <GameFooterCard
               onExpandGame={handleExpandGame}
               isGameExpanded={isGameExpanded}
             />
           </div>
 
           {/* Statistics Card - Below footer card */}
-          <div style={{
-            width: "100%",
-            maxWidth: "1400px",
-            borderRadius: "12px",
-            overflow: "hidden",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
-          }}>
-            <StatisticsPanel 
-              pastRounds={pastRounds}
-              formatXLM={formatXLM}
-            />
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "1400px",
+              borderRadius: "12px",
+              overflow: "hidden",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            <StatisticsPanel pastRounds={pastRounds} formatXLM={formatXLM} />
           </div>
         </div>
       )}
 
       {/* Hamburger Menu */}
-      <HamburgerMenu 
-        isOpen={isMenuOpen} 
-        onClose={() => setIsMenuOpen(false)} 
-      />
+      <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
       {/* Round Details Modal */}
       <RoundDetailsModal
@@ -212,21 +253,23 @@ const Game: React.FC = () => {
   // Redirect to home if not connected
   React.useEffect(() => {
     if (!address) {
-      navigate("/");
+      void navigate("/");
     }
   }, [address, navigate]);
 
   if (!address) {
     return (
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "calc(100vh - 120px)",
-        background: "#0a0e1a",
-        color: "#8b8fa3",
-        fontSize: "18px"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "calc(100vh - 120px)",
+          background: "#0a0e1a",
+          color: "#8b8fa3",
+          fontSize: "18px",
+        }}
+      >
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: "48px", marginBottom: "20px" }}>🎈</div>
           <div>Please connect your wallet to play</div>

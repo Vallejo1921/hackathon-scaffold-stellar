@@ -7,13 +7,13 @@ interface AnimatedBalloonProps {
   isExploding: boolean;
 }
 
-const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({ 
-  progress, 
-  color, 
+const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
+  progress,
+  color,
   isFlying,
-  isExploding 
+  isExploding,
 }) => {
-  // Calcular posição na curva (mesma lógica da ProgressCurve)
+  // Calculate position on curve (same logic as ProgressCurve)
   const getPositionOnCurve = (t: number) => {
     const startX = 0;
     const startY = 100;
@@ -24,23 +24,27 @@ const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
     const cp2X = 65;
     const cp2Y = 15;
 
-    const x = Math.pow(1 - t, 3) * startX +
-              3 * Math.pow(1 - t, 2) * t * cp1X +
-              3 * (1 - t) * Math.pow(t, 2) * cp2X +
-              Math.pow(t, 3) * endX;
-    
-    const y = Math.pow(1 - t, 3) * startY +
-              3 * Math.pow(1 - t, 2) * t * cp1Y +
-              3 * (1 - t) * Math.pow(t, 2) * cp2Y +
-              Math.pow(t, 3) * endY;
-    
-    // Calcular rotação baseada na direção da curva (tangente)
-    const dx = 3 * Math.pow(1 - t, 2) * (cp1X - startX) +
-               6 * (1 - t) * t * (cp2X - cp1X) +
-               3 * Math.pow(t, 2) * (endX - cp2X);
-    const dy = 3 * Math.pow(1 - t, 2) * (cp1Y - startY) +
-               6 * (1 - t) * t * (cp2Y - cp1Y) +
-               3 * Math.pow(t, 2) * (endY - cp2Y);
+    const x =
+      Math.pow(1 - t, 3) * startX +
+      3 * Math.pow(1 - t, 2) * t * cp1X +
+      3 * (1 - t) * Math.pow(t, 2) * cp2X +
+      Math.pow(t, 3) * endX;
+
+    const y =
+      Math.pow(1 - t, 3) * startY +
+      3 * Math.pow(1 - t, 2) * t * cp1Y +
+      3 * (1 - t) * Math.pow(t, 2) * cp2Y +
+      Math.pow(t, 3) * endY;
+
+    // Calculate rotation based on curve direction (tangent)
+    const dx =
+      3 * Math.pow(1 - t, 2) * (cp1X - startX) +
+      6 * (1 - t) * t * (cp2X - cp1X) +
+      3 * Math.pow(t, 2) * (endX - cp2X);
+    const dy =
+      3 * Math.pow(1 - t, 2) * (cp1Y - startY) +
+      6 * (1 - t) * t * (cp2Y - cp1Y) +
+      3 * Math.pow(t, 2) * (endY - cp2Y);
     const angle = Math.atan2(-dy, dx) * (180 / Math.PI);
 
     return { x, y, angle };
@@ -58,25 +62,31 @@ const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
           transform: `translate(-50%, -50%) rotate(${position.angle}deg) ${
             isExploding ? "scale(2)" : "scale(1)"
           }`,
-          transition: isExploding 
+          transition: isExploding
             ? "all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)"
             : "left 0.1s linear, top 0.1s linear, transform 0.1s ease-out",
-          opacity: isExploding ? 0 : (isFlying ? 1 : 0.3),
+          opacity: isExploding ? 0 : isFlying ? 1 : 0.3,
           zIndex: 15,
-          pointerEvents: "none"
+          pointerEvents: "none",
         }}
       >
-        {/* SVG do Balão/Aviador customizado */}
+        {/* Custom Balloon/Aviator SVG */}
         <svg width="100" height="120" viewBox="0 0 100 120">
           <defs>
             <filter id="balloonGlow">
-              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
               <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            <linearGradient id="balloonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient
+              id="balloonGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
               <stop offset="0%" stopColor={color} stopOpacity="1" />
               <stop offset="50%" stopColor={color} stopOpacity="0.9" />
               <stop offset="100%" stopColor={color} stopOpacity="0.7" />
@@ -86,8 +96,8 @@ const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
               <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
             </radialGradient>
           </defs>
-          
-          {/* Balão principal */}
+
+          {/* Main balloon */}
           <ellipse
             cx="50"
             cy="50"
@@ -96,8 +106,8 @@ const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
             fill="url(#balloonGradient)"
             filter="url(#balloonGlow)"
           />
-          
-          {/* Brilho no balão */}
+
+          {/* Balloon shine */}
           <ellipse
             cx="50"
             cy="50"
@@ -106,8 +116,8 @@ const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
             fill="url(#balloonShine)"
             opacity="0.6"
           />
-          
-          {/* Fio do balão */}
+
+          {/* Balloon string */}
           <line
             x1="50"
             y1="95"
@@ -121,19 +131,21 @@ const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
         </svg>
       </div>
 
-      {/* Partículas de explosão */}
+      {/* Explosion particles */}
       {isExploding && (
-        <div style={{
-          position: "absolute",
-          left: `${position.x}%`,
-          top: `${position.y}%`,
-          width: "200px",
-          height: "200px",
-          transform: "translate(-50%, -50%)",
-          pointerEvents: "none",
-          zIndex: 16
-        }}>
-          {Array.from({length: 20}).map((_, i) => {
+        <div
+          style={{
+            position: "absolute",
+            left: `${position.x}%`,
+            top: `${position.y}%`,
+            width: "200px",
+            height: "200px",
+            transform: "translate(-50%, -50%)",
+            pointerEvents: "none",
+            zIndex: 16,
+          }}
+        >
+          {Array.from({ length: 20 }).map((_, i) => {
             const angle = (i / 20) * Math.PI * 2;
             const distance = 60;
             return (
@@ -147,10 +159,10 @@ const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
                   background: color,
                   left: "50%",
                   top: "50%",
-                  transform: `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg) translateY(-${distance}px)`,
+                  transform: `translate(-50%, -50%) rotate(${(angle * 180) / Math.PI}deg) translateY(-${distance}px)`,
                   animation: `explode 0.8s ease-out forwards`,
                   animationDelay: `${i * 0.03}s`,
-                  boxShadow: `0 0 10px ${color}`
+                  boxShadow: `0 0 10px ${color}`,
                 }}
               />
             );
@@ -175,4 +187,3 @@ const AnimatedBalloon: React.FC<AnimatedBalloonProps> = ({
 };
 
 export default AnimatedBalloon;
-

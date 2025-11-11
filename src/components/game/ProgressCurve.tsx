@@ -6,40 +6,42 @@ interface ProgressCurveProps {
 }
 
 const ProgressCurve: React.FC<ProgressCurveProps> = ({ progress, color }) => {
-  // Curva bezier de canto inferior esquerdo para superior direito
-  // Ponto inicial: (0, 100%)
-  // Ponto final: (100%, 0%)
-  // Control points para curva suave
-  
+  // Bezier curve from bottom-left to top-right
+  // Start point: (0, 100%)
+  // End point: (100%, 0%)
+  // Control points for smooth curve
+
   const startX = 0;
   const startY = 100;
   const endX = 100;
   const endY = 0;
-  
-  // Control points da curva bezier (criando curva suave ascendente)
+
+  // Bezier curve control points (creating smooth ascending curve)
   const cp1X = 25;
   const cp1Y = 75;
   const cp2X = 65;
   const cp2Y = 15;
 
-  // Calcular ponto atual na curva baseado no progress
+  // Calculate current point on curve based on progress
   const getPointOnCurve = (t: number) => {
-    const x = Math.pow(1 - t, 3) * startX +
-              3 * Math.pow(1 - t, 2) * t * cp1X +
-              3 * (1 - t) * Math.pow(t, 2) * cp2X +
-              Math.pow(t, 3) * endX;
-    
-    const y = Math.pow(1 - t, 3) * startY +
-              3 * Math.pow(1 - t, 2) * t * cp1Y +
-              3 * (1 - t) * Math.pow(t, 2) * cp2Y +
-              Math.pow(t, 3) * endY;
-    
+    const x =
+      Math.pow(1 - t, 3) * startX +
+      3 * Math.pow(1 - t, 2) * t * cp1X +
+      3 * (1 - t) * Math.pow(t, 2) * cp2X +
+      Math.pow(t, 3) * endX;
+
+    const y =
+      Math.pow(1 - t, 3) * startY +
+      3 * Math.pow(1 - t, 2) * t * cp1Y +
+      3 * (1 - t) * Math.pow(t, 2) * cp2Y +
+      Math.pow(t, 3) * endY;
+
     return { x, y };
   };
 
   const currentPoint = getPointOnCurve(progress);
 
-  // Criar path da curva até o ponto atual (preenchido)
+  // Create path of curve up to current point (filled)
   const pathData = `M ${startX} ${startY} 
                     C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${currentPoint.x} ${currentPoint.y}
                     L ${currentPoint.x} ${startY}
@@ -54,7 +56,7 @@ const ProgressCurve: React.FC<ProgressCurveProps> = ({ progress, color }) => {
         width: "100%",
         height: "100%",
         zIndex: 2,
-        pointerEvents: "none"
+        pointerEvents: "none",
       }}
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
@@ -66,18 +68,14 @@ const ProgressCurve: React.FC<ProgressCurveProps> = ({ progress, color }) => {
           <stop offset="100%" stopColor={color} stopOpacity="0.6" />
         </linearGradient>
         <filter id="curveGlow">
-          <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+          <feGaussianBlur stdDeviation="1" result="coloredBlur" />
           <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
       </defs>
-      <path
-        d={pathData}
-        fill="url(#curveGradient)"
-        filter="url(#curveGlow)"
-      />
+      <path d={pathData} fill="url(#curveGradient)" filter="url(#curveGlow)" />
       {/* Linha da curva (borda) */}
       <path
         d={`M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${currentPoint.x} ${currentPoint.y}`}
@@ -91,4 +89,3 @@ const ProgressCurve: React.FC<ProgressCurveProps> = ({ progress, color }) => {
 };
 
 export default ProgressCurve;
-

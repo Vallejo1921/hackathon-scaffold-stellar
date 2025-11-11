@@ -4,7 +4,9 @@ interface AnimatedBackgroundProps {
   progress: number; // 0-1 (baseado no multiplicador)
 }
 
-const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({ progress }) => {
+const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
+  progress,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const animationTimeRef = useRef<number>(0);
@@ -32,11 +34,11 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({ progress }) => 
       const width = rect.width;
       const height = rect.height;
 
-      // Limpar canvas
+      // Clear canvas
       ctx.fillStyle = "#0a0e1a";
       ctx.fillRect(0, 0, width, height);
 
-      // Gradiente de fundo (do canto inferior esquerdo para superior direito)
+      // Background gradient (from bottom-left to top-right)
       const gradient = ctx.createLinearGradient(0, height, width, 0);
       gradient.addColorStop(0, "#0a0e1a");
       gradient.addColorStop(0.3, "#1a0d2e");
@@ -45,21 +47,21 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({ progress }) => 
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
-      // Origem das linhas radiais (canto inferior esquerdo)
+      // Origin of radial lines (bottom-left corner)
       const centerX = 0;
       const centerY = height;
       const numLines = 80;
       const maxDistance = Math.sqrt(width * width + height * height);
 
-      // Desenhar linhas radiais
+      // Draw radial lines
       ctx.strokeStyle = "#1a1d29";
       ctx.lineWidth = 1.5;
 
       for (let i = 0; i < numLines; i++) {
-        const angle = (i / numLines) * Math.PI * 0.75; // 135 graus (do inferior esquerdo)
+        const angle = (i / numLines) * Math.PI * 0.75; // 135 degrees (from bottom-left)
         const distance = maxDistance * (1.2 + progress * 0.3);
-        
-        // Offset baseado no tempo para criar movimento parallax
+
+        // Time-based offset to create parallax movement
         const offset = animationTimeRef.current * 30;
         const currentDistance = distance + offset;
 
@@ -72,7 +74,7 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({ progress }) => 
         ctx.stroke();
       }
 
-      // Linhas alternadas mais escuras (padrão)
+      // Alternating darker lines (pattern)
       ctx.strokeStyle = "#0f1117";
       ctx.lineWidth = 1;
       for (let i = 0; i < numLines; i += 2) {
@@ -90,7 +92,7 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({ progress }) => 
         ctx.stroke();
       }
 
-      // Incrementar tempo de animação
+      // Increment animation time
       animationTimeRef.current += 0.01;
       animationFrameRef.current = requestAnimationFrame(draw);
     };
@@ -114,11 +116,10 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({ progress }) => 
         left: 0,
         width: "100%",
         height: "100%",
-        zIndex: 1
+        zIndex: 1,
       }}
     />
   );
 };
 
 export default AnimatedBackground;
-
