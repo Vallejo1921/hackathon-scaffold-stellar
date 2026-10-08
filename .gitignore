@@ -25,8 +25,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # environment variables
-.env
-.env.*
 !.env.example
 
 # easy way to create temporary local-only files and folders
@@ -47,3 +45,7 @@ src/contracts/*
 !src/contracts/util.ts
 # Allow balloonfly contract import for deployment
 !src/contracts/balloonfly.ts
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+config.bat
