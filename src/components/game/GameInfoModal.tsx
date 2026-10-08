@@ -6,15 +6,13 @@ interface GameInfoModalProps {
   onClose: () => void;
   pool: Pool | null;
   formatXLM: (stroops: bigint) => string;
-  totalLikes?: number;
 }
 
 const GameInfoModal: React.FC<GameInfoModalProps> = ({
   isOpen,
   onClose,
   pool,
-  formatXLM,
-  totalLikes = 3009
+  formatXLM
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -182,37 +180,6 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({
             </div>
           </div>
 
-          {/* Total Likes */}
-          <div>
-            <label style={{
-              display: "block",
-              fontSize: "12px",
-              color: "#8b8fa3",
-              marginBottom: "8px",
-              fontWeight: 600
-            }}>
-              Total Likes
-            </label>
-            <div style={{
-              background: "#252837",
-              padding: "12px 16px",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              border: "1px solid #2a2d3e"
-            }}>
-              <span style={{ fontSize: "20px" }}>👍</span>
-              <span style={{
-                fontSize: "18px",
-                fontWeight: 700,
-                color: "#fff"
-              }}>
-                {totalLikes.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
           {/* Fullscreen Button */}
           <button
             onClick={handleFullscreen}
@@ -269,7 +236,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({
           fontSize: "11px",
           color: "#8b8fa3"
         }}>
-          Powered by <strong style={{ color: "#8b5cf6" }}>DeegaLabs</strong>
+          Powered by <strong style={{ color: "#8b5cf6" }}>Stellar</strong>
         </div>
       </div>
     </>
