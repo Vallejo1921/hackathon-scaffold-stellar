@@ -4,9 +4,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"stellar scaffold watch --build-clients\" \"vite\"",
-    "start": "concurrently \"stellar scaffold watch --build-clients\" \"vite\"",
-    "build": "pnpm --filter balloonfly build && tsc -b && vite build",
+    "dev": "node api.js && concurrently \"stellar scaffold watch --build-clients\" \"vite\"",
+    "start": "node api.js && concurrently \"stellar scaffold watch --build-clients\" \"vite\"",
+    "build": "node api.js && pnpm --filter balloonfly build && tsc -b && vite build",
     "install:contracts": "npm install --workspace=packages && npm run build --workspace=packages",
     "preview": "vite preview",
     "lint": "eslint .",
